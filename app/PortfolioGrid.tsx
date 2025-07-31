@@ -25,7 +25,7 @@ export default function PortfolioGrid({ portfolio }: { portfolio: Project[] }) {
             <img
               src={project.image || "/projects/1.jpg"}
               alt={project.title}
-              className="w-full h-64 object-cover group-hover: transition-transform duration-300"
+              className="w-full h-64 object-cover group-hover: transition-transform duration-700"
               onMouseEnter={changesrc(project.image2)}
               onMouseLeave={changesrc(project.image)}
             />
