@@ -31,32 +31,32 @@ export default function DecoratorWebsite() {
     {
       title: "Modern Living Room",
       category: "Residential",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
     {
       title: "Luxury Bedroom Suite",
       category: "Residential",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
     {
       title: "Contemporary Kitchen",
       category: "Residential",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
     {
       title: "Executive Office",
       category: "Commercial",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
     {
       title: "Boutique Restaurant",
       category: "Commercial",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
     {
       title: "Cozy Reading Nook",
       category: "Residential",
-      image: "/placeholder.svg?height=300&width=400",
+      image: "/projects/?height=300&width=400",
     },
   ]
 
@@ -84,7 +84,7 @@ export default function DecoratorWebsite() {
       <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="text-2xl font-bold text-rose-800">Emma Claire Design</div>
+            <div className="text-2xl font-bold text-rose-800">Meryam Swilem</div>
             <div className="hidden md:flex space-x-8">
               <a href="#about" className="text-gray-700 hover:text-rose-600 transition-colors">
                 About
@@ -116,7 +116,7 @@ export default function DecoratorWebsite() {
                 <span className="text-rose-600 block">Spaces That Inspire</span>
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Hi, I'm Emma Claire, an interior decorator passionate about transforming spaces into personalized
+                Hi, I'm Meryam Swilem, an interior decorator passionate about transforming spaces into personalized
                 sanctuaries that reflect your unique style and enhance your daily life.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -155,7 +155,7 @@ export default function DecoratorWebsite() {
               <img src="/placeholder.svg?height=500&width=600" alt="Design Studio" className="rounded-2xl shadow-lg" />
             </div>
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">About Emma</h2>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">About Meryam</h2>
               <p className="text-lg text-gray-600 mb-6">
                 With over 8 years of experience in interior design, I specialize in creating spaces that are both
                 beautiful and functional. My approach combines timeless elegance with modern sensibilities, ensuring
@@ -281,10 +281,6 @@ export default function DecoratorWebsite() {
               <h3 className="text-2xl font-semibold text-gray-900 mb-6">Get In Touch</h3>
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <Phone className="w-5 h-5 text-rose-600 mr-3" />
-                  <span className="text-gray-600">(555) 123-4567</span>
-                </div>
-                <div className="flex items-center">
                   <Mail className="w-5 h-5 text-rose-600 mr-3" />
                   <span className="text-gray-600">emma@emmaclairedesign.com</span>
                 </div>
@@ -352,9 +348,9 @@ export default function DecoratorWebsite() {
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="text-2xl font-bold text-rose-400 mb-4">Emma Claire Design</div>
+            <div className="text-2xl font-bold text-rose-400 mb-4">Meryam Swilem Design</div>
             <p className="text-gray-400 mb-4">Creating beautiful spaces that inspire</p>
-            <p className="text-gray-500 text-sm">© 2024 Emma Claire Design. All rights reserved.</p>
+            <p className="text-gray-500 text-sm">© 2025 Meryam Swilem . All rights reserved.</p>
           </div>
         </div>
       </footer>
