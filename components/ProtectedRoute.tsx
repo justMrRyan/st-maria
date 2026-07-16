@@ -12,13 +12,12 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Get session
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
@@ -26,18 +25,21 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           return;
         }
 
-        // Check if user is the allowed owner (hardcoded)
-        const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
+        // Check if user has dashboard access
+        const { data: access } = await supabase
+            .from('dashboard_access')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
 
-        if (session.user.id === allowedUserId) {
-
+        if (access) {
           setAuthorized(true);
         } else {
-
           await supabase.auth.signOut();
-          router.push('/unauthorized');
+          router.push('/login?error=unauthorized');
         }
       } catch (error) {
+        console.error('Auth check error:', error);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -45,15 +47,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
 
     checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [router]);
 
   if (loading) {

@@ -1,4 +1,4 @@
-// app/login/route.ts
+// app/login/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import { Sparkles, Mail, Lock, Loader2, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import {Footer} from "@/components/Footer";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,10 +23,19 @@ export default function LoginPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-          if (session.user.id === allowedUserId) {
+          // Check if user has dashboard access
+          const { data: access } = await supabase
+              .from('dashboard_access')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+          if (access) {
             window.location.href = '/dashboard';
             return;
+          } else {
+            // User has session but no access
+            await supabase.auth.signOut();
           }
         }
       } catch (error) {
@@ -53,16 +61,21 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
+      // Check if user has dashboard access
+      const { data: access, error: accessError } = await supabase
+          .from('dashboard_access')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
 
-      if (data.user.id === allowedUserId) {
-        window.location.href = '/dashboard';
-      } else {
+      if (accessError || !access) {
         await supabase.auth.signOut();
-        setError('This account does not have dashboard access.');
+        setError('You do not have permission to access the dashboard.');
         setLoading(false);
+        return;
       }
 
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
       setLoading(false);
@@ -79,7 +92,6 @@ export default function LoginPage() {
 
   return (
       <div className="min-h-screen flex items-center justify-center bg-[#faf8f6] p-4 relative overflow-hidden">
-        {/* Decorative Elements */}
         <div className="absolute top-20 right-20 w-64 h-64 bg-[#d4c5b0]/20 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-20 w-96 h-96 bg-[#e8ddd0]/20 rounded-full blur-3xl" />
 
@@ -90,7 +102,6 @@ export default function LoginPage() {
             className="w-full max-w-md relative z-10"
         >
           <div className="bg-white border border-[#f0ebe6] p-8">
-            {/* Logo */}
             <div className="text-center mb-8">
               <Link href="/" className="inline-block">
                 <div className="relative w-[180px] h-[40px] mx-auto">
@@ -106,13 +117,11 @@ export default function LoginPage() {
               <p className="text-[#8a7a6a] mt-1 text-sm">Sign in to manage your portfolio</p>
             </div>
 
-            {/* Security Notice */}
             <div className="flex items-center gap-2 px-3 py-2 bg-[#f8f4f0] mb-6">
               <Shield className="h-4 w-4 text-[#2c1810]" />
               <span className="text-xs text-[#8a7a6a]">Restricted access • Authorized users only</span>
             </div>
 
-            {/* Error */}
             {error && (
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -123,7 +132,6 @@ export default function LoginPage() {
                 </motion.div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
@@ -153,7 +161,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-10 pr-12 py-2.5 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors placeholder:text-[#b8a89a]"
-                      placeholder="••••••••"
+                      placeholder="Enter your password"
                       required
                   />
                   <button
