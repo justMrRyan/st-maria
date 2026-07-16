@@ -1,4 +1,4 @@
-// app/dashboard/settings/route.ts
+// app/dashboard/settings/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -19,9 +19,11 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast, Toaster } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function DashboardSettings() {
   const router = useRouter();
+  const { isOwner, userId } = usePermissions();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -35,10 +37,10 @@ export default function DashboardSettings() {
           setUser(session.user);
 
           const { data: profileData } = await supabase
-              .from('Profile')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
+            .from('Profile')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
 
           setProfile(profileData);
         }
@@ -63,207 +65,204 @@ export default function DashboardSettings() {
     }
   };
 
-  const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-  const isOwner = user?.id === allowedUserId;
-
   if (loading) {
     return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
+      </div>
     );
   }
 
   return (
-      <>
-        <Toaster position="top-right" />
-        <div className="space-y-8 max-w-3xl">
-          {/* Header */}
-          <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-          >
-            <h1 className="text-3xl font-bold text-[#2c1810]">Settings</h1>
-            <p className="text-[#8a7a6a] mt-1">
-              Manage your account and preferences
-            </p>
-          </motion.div>
+    <>
+      <Toaster position="top-right" />
+      <div className="space-y-8 max-w-3xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-3xl font-bold text-[#2c1810]">Settings</h1>
+          <p className="text-[#8a7a6a] mt-1">
+            Manage your account and preferences
+          </p>
+        </motion.div>
 
-          {/* Account Info */}
-          <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white border border-[#f0ebe6] p-6"
-          >
-            <h2 className="text-xl font-semibold text-[#2c1810] mb-4 flex items-center gap-2">
-              <User className="h-5 w-5 text-[#8a7a6a]" />
-              Account Information
-            </h2>
-            {user ? (
-                <div className="space-y-4">
-                  {/* User Profile Card */}
-                  <div className="flex items-center gap-4 p-4 bg-[#f8f4f0]">
-                    <div className="h-14 w-14 bg-[#2c1810] flex items-center justify-center">
+        {/* Account Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="bg-white border border-[#f0ebe6] p-6"
+        >
+          <h2 className="text-xl font-semibold text-[#2c1810] mb-4 flex items-center gap-2">
+            <User className="h-5 w-5 text-[#8a7a6a]" />
+            Account Information
+          </h2>
+          {user ? (
+            <div className="space-y-4">
+              {/* User Profile Card */}
+              <div className="flex items-center gap-4 p-4 bg-[#f8f4f0]">
+                <div className="h-14 w-14 bg-[#2c1810] flex items-center justify-center">
                   <span className="text-xl font-bold text-white">
                     {user.email?.charAt(0).toUpperCase() || 'U'}
                   </span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-[#2c1810]">{profile?.display_name || 'User'}</p>
-                      <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5" />
-                        {user.email}
-                      </p>
-                    </div>
-                    {isOwner && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2c1810] text-white text-xs font-medium">
-                          <Crown className="h-3.5 w-3.5" />
-                          Owner
-                        </div>
-                    )}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-[#2c1810]">{profile?.display_name || 'User'}</p>
+                  <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" />
+                    {user.email}
+                  </p>
+                </div>
+                {isOwner && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2c1810] text-white text-xs font-medium">
+                    <Crown className="h-3.5 w-3.5" />
+                    Owner
                   </div>
+                )}
+              </div>
 
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 bg-white border border-[#f0ebe6]">
-                      <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
-                        <Shield className="h-3.5 w-3.5" />
-                        Role
-                      </p>
-                      <p className="font-medium text-[#2c1810] mt-1">
-                        {isOwner ? (
-                            <span className="inline-flex items-center gap-1.5 text-[#27ae60]">
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-white border border-[#f0ebe6]">
+                  <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5" />
+                    Role
+                  </p>
+                  <p className="font-medium text-[#2c1810] mt-1">
+                    {isOwner ? (
+                      <span className="inline-flex items-center gap-1.5 text-[#27ae60]">
                         <CheckCircle className="h-4 w-4" />
                         Owner
                       </span>
-                        ) : (
-                            <span className="text-[#8a7a6a]">Viewer</span>
-                        )}
-                      </p>
-                      {isOwner && (
-                          <p className="text-xs text-[#8a7a6a] mt-1">
-                            Full access to manage projects and messages
-                          </p>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-[#8a7a6a]">Viewer</span>
+                    )}
+                  </p>
+                  {isOwner && (
+                    <p className="text-xs text-[#8a7a6a] mt-1">
+                      Full access to manage projects and messages
+                    </p>
+                  )}
+                </div>
 
-                    <div className="p-4 bg-white border border-[#f0ebe6]">
-                      <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
-                        <SettingsIcon className="h-3.5 w-3.5" />
-                        Account Status
-                      </p>
-                      <p className="font-medium text-[#2c1810] mt-1">
+                <div className="p-4 bg-white border border-[#f0ebe6]">
+                  <p className="text-sm text-[#8a7a6a] flex items-center gap-1.5">
+                    <SettingsIcon className="h-3.5 w-3.5" />
+                    Account Status
+                  </p>
+                  <p className="font-medium text-[#2c1810] mt-1">
                     <span className="inline-flex items-center gap-1.5 text-[#27ae60]">
                       <CheckCircle className="h-4 w-4" />
                       Active
                     </span>
-                      </p>
-                      <p className="text-xs text-[#8a7a6a] mt-1">
-                        Connected to Coflow authentication
-                      </p>
-                    </div>
-                  </div>
+                  </p>
+                  <p className="text-xs text-[#8a7a6a] mt-1">
+                    Connected to Coflow authentication
+                  </p>
                 </div>
-            ) : (
-                <p className="text-[#8a7a6a]">No user session found</p>
-            )}
-          </motion.div>
-
-          {/* Actions */}
-          <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white border border-[#f0ebe6] p-6"
-          >
-            <h2 className="text-xl font-semibold text-[#2c1810] mb-4">Actions</h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                  onClick={() => router.push('/dashboard')}
-                  className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] px-4 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2"
-              >
-                <SettingsIcon className="h-4 w-4" />
-                Go to Dashboard
-              </button>
-              <button
-                  onClick={handleLogout}
-                  className="bg-[#c0392b] hover:bg-[#e74c3c] text-white px-4 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+              </div>
             </div>
-          </motion.div>
+          ) : (
+            <p className="text-[#8a7a6a]">No user session found</p>
+          )}
+        </motion.div>
 
-          {/* Help Section */}
-          <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-[#f8f4f0] border border-[#f0ebe6] p-6"
-          >
-            <h2 className="text-xl font-semibold text-[#2c1810] mb-3 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#8a7a6a]" />
-              Need Help?
-            </h2>
-            <div className="space-y-2 text-sm text-[#8a7a6a]">
-              <p className="flex items-start gap-2">
-                <span className="text-[#2c1810] font-bold">•</span>
-                For questions about managing your portfolio or messages, contact support.
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-[#2c1810] font-bold">•</span>
-                To upload projects, visit the <strong className="text-[#2c1810]">Projects</strong> section and click "New Project".
-              </p>
-              <p className="flex items-start gap-2">
-                <span className="text-[#2c1810] font-bold">•</span>
-                Your contact form messages will appear in the <strong className="text-[#2c1810]">Messages</strong> section.
-              </p>
-            </div>
-            <div className="mt-4 pt-4 border-t border-[#f0ebe6]">
-              <p className="text-xs text-[#b8a89a] flex items-center gap-2">
-                <span className="font-medium text-[#2c1810]">User ID:</span>
-                {user?.id ? `${user.id.slice(0, 8)}...` : 'N/A'}
-                {isOwner && (
-                    <span className="inline-flex items-center gap-1 text-[#2c1810] font-medium">
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-white border border-[#f0ebe6] p-6"
+        >
+          <h2 className="text-xl font-semibold text-[#2c1810] mb-4">Actions</h2>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] px-4 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2"
+            >
+              <SettingsIcon className="h-4 w-4" />
+              Go to Dashboard
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-[#c0392b] hover:bg-[#e74c3c] text-white px-4 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Help Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-[#f8f4f0] border border-[#f0ebe6] p-6"
+        >
+          <h2 className="text-xl font-semibold text-[#2c1810] mb-3 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[#8a7a6a]" />
+            Need Help?
+          </h2>
+          <div className="space-y-2 text-sm text-[#8a7a6a]">
+            <p className="flex items-start gap-2">
+              <span className="text-[#2c1810] font-bold">•</span>
+              For questions about managing your portfolio or messages, contact support.
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-[#2c1810] font-bold">•</span>
+              To upload projects, visit the <strong className="text-[#2c1810]">Projects</strong> section and click "New Project".
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-[#2c1810] font-bold">•</span>
+              Your contact form messages will appear in the <strong className="text-[#2c1810]">Messages</strong> section.
+            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-[#f0ebe6]">
+            <p className="text-xs text-[#b8a89a] flex items-center gap-2">
+              <span className="font-medium text-[#2c1810]">User ID:</span>
+              {user?.id ? `${user.id.slice(0, 8)}...` : 'N/A'}
+              {isOwner && (
+                <span className="inline-flex items-center gap-1 text-[#2c1810] font-medium">
                   <Crown className="h-3 w-3" />
                   Owner
                 </span>
-                )}
-              </p>
-            </div>
-          </motion.div>
+              )}
+            </p>
+          </div>
+        </motion.div>
 
-          {/* Quick Tip */}
-          <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-gradient-to-r from-[#2c1810] to-[#3d2820] p-6"
-          >
-            <div className="flex items-start gap-4">
-              <div className="bg-white/10 p-2">
-                <Sparkles className="h-5 w-5 text-[#d4c5b0]" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#d4c5b0]">Quick Tip</h3>
-                <p className="text-sm text-[#b8a89a] mt-1">
-                  You can manage all your portfolio projects from the Projects section.
-                  Add images, descriptions, and categories to showcase your work.
-                </p>
-                <button
-                    onClick={() => router.push('/dashboard/projects')}
-                    className="mt-3 border border-white/20 text-white hover:bg-white/10 px-4 py-1.5 text-sm font-medium transition-all duration-300 flex items-center gap-1.5"
-                >
-                  Go to Projects
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
+        {/* Quick Tip */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-gradient-to-r from-[#2c1810] to-[#3d2820] p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="bg-white/10 p-2">
+              <Sparkles className="h-5 w-5 text-[#d4c5b0]" />
             </div>
-          </motion.div>
-        </div>
-      </>
+            <div>
+              <h3 className="font-semibold text-[#d4c5b0]">Quick Tip</h3>
+              <p className="text-sm text-[#b8a89a] mt-1">
+                You can manage all your portfolio projects from the Projects section.
+                Add images, descriptions, and categories to showcase your work.
+              </p>
+              <button
+                onClick={() => router.push('/dashboard/projects')}
+                className="mt-3 border border-white/20 text-white hover:bg-white/10 px-4 py-1.5 text-sm font-medium transition-all duration-300 flex items-center gap-1.5"
+              >
+                Go to Projects
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }

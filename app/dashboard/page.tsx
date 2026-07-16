@@ -1,4 +1,4 @@
-// app/dashboard/route.ts
+// app/dashboard/page.tsx
 'use client';
 
 import Link from 'next/link';
@@ -29,20 +29,21 @@ export default function DashboardHome() {
       try {
         const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
 
+        // Get projects count
         const { count: projectsCount } = await supabase
             .from('projects')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', allowedUserId);
 
+        // Get ALL messages (no user_id filter since we removed it)
         const { count: messagesCount } = await supabase
             .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', allowedUserId);
+            .select('*', { count: 'exact', head: true });
 
+        // Get unread messages count (no user_id filter)
         const { count: unreadCount } = await supabase
             .from('messages')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', allowedUserId)
             .eq('read', false);
 
         setStats({

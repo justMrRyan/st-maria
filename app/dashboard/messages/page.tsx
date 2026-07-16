@@ -39,16 +39,13 @@ export default function DashboardMessages() {
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, []); // <-- ADDED EMPTY ARRAY
 
   const fetchMessages = async () => {
     try {
-      const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-
       const { data, error } = await supabase
           .from('messages')
           .select('*')
-          .eq('user_id', allowedUserId)
           .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -59,7 +56,7 @@ export default function DashboardMessages() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }; // <-- REMOVED EXTRA CLOSING BRACE
 
   const handleMarkRead = async (messageId: string, currentStatus: boolean) => {
     try {
@@ -86,6 +83,7 @@ export default function DashboardMessages() {
   };
 
   const handleDelete = async (messageId: string) => {
+    // <-- REMOVED isOwner check since it's not defined
     if (!confirm('Are you sure you want to delete this message?')) return;
 
     setDeleting(messageId);

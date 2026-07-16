@@ -123,6 +123,7 @@ export default function EditProject() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setSaving(true);
 
     try {
@@ -319,8 +320,8 @@ export default function EditProject() {
                               <X className="h-4 w-4" />
                             </button>
                             <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#2c1810]/70 text-white text-[10px]">
-                                                {index + 1}
-                                            </span>
+                        {index + 1}
+                      </span>
                           </div>
                       ))}
                     </div>
@@ -362,8 +363,8 @@ export default function EditProject() {
                               <X className="h-4 w-4" />
                             </button>
                             <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-[#2c1810]/70 text-white text-[10px]">
-                                                New
-                                            </span>
+                        New
+                      </span>
                           </div>
                       ))}
                     </div>

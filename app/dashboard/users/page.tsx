@@ -38,21 +38,25 @@ const ROLE_PERMISSIONS = {
         label: 'Owner',
         description: 'Full access to everything',
         color: 'bg-[#2c1810] text-white',
+        permissions: ['Projects', 'Messages', 'Settings', 'Users']
     },
     admin: {
         label: 'Admin',
-        description: 'Can manage all content and users',
+        description: 'Can manage all content',
         color: 'bg-blue-100 text-blue-700',
+        permissions: ['Projects', 'Messages', 'Settings']
     },
     editor: {
         label: 'Editor',
         description: 'Can manage projects and messages',
         color: 'bg-green-100 text-green-700',
+        permissions: ['Projects', 'Messages']
     },
     viewer: {
         label: 'Viewer',
         description: 'Can only view content',
         color: 'bg-gray-100 text-gray-700',
+        permissions: []
     }
 };
 
@@ -71,6 +75,7 @@ export default function DashboardUsers() {
     const [foundUser, setFoundUser] = useState<{ user_id: string; username: string; display_name: string } | null>(null);
     const [canManageUsers, setCanManageUsers] = useState(false);
     const [checkingPermission, setCheckingPermission] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         const checkPermission = async () => {
@@ -83,24 +88,29 @@ export default function DashboardUsers() {
                     return;
                 }
 
-                // Hardcode owner check for now
-                const ownerId = '7fae0150-58f2-4119-8384-438e135d8f3a';
-                if (user.id === ownerId) {
-                    setCanManageUsers(true);
-                    setCheckingPermission(false);
-                    return;
-                }
+                setCurrentUserId(user.id);
 
-                const { data: access } = await supabase
+                const { data: access, error } = await supabase
                     .from('dashboard_access')
                     .select('*')
                     .eq('user_id', user.id)
                     .maybeSingle();
 
-                if (access) {
-                    setCanManageUsers(access.can_manage_users || access.role === 'owner');
+                if (error) {
+                    console.error('Error fetching access:', error);
+                    setCanManageUsers(false);
+                    setCheckingPermission(false);
+                    return;
                 }
-            } catch {
+
+                if (access) {
+                    // Only users with can_manage_users = true can manage users
+                    setCanManageUsers(access.can_manage_users === true);
+                } else {
+                    setCanManageUsers(false);
+                }
+            } catch (error) {
+                console.error('Error in checkPermission:', error);
                 setCanManageUsers(false);
             } finally {
                 setCheckingPermission(false);
@@ -152,7 +162,8 @@ export default function DashboardUsers() {
             });
 
             setUsers(usersWithInfo);
-        } catch {
+        } catch (error) {
+            console.error('Error fetching users:', error);
             toast.error('Failed to fetch users');
         } finally {
             setLoading(false);
@@ -176,7 +187,8 @@ export default function DashboardUsers() {
             setFoundUser(user);
             toast.success('User found: ' + (user.display_name || user.username));
             return user;
-        } catch {
+        } catch (error) {
+            console.error('Error checking user:', error);
             toast.error('Failed to check user');
             return null;
         } finally {
@@ -187,6 +199,11 @@ export default function DashboardUsers() {
     const handleAddUser = async () => {
         if (!newUserUsername) {
             toast.error('Please enter a username');
+            return;
+        }
+
+        if (!canManageUsers) {
+            toast.error('You do not have permission to add users.');
             return;
         }
 
@@ -211,15 +228,23 @@ export default function DashboardUsers() {
                 return;
             }
 
+            const role = newUserRole;
+            const canManageProjects = true;
+            const canManageMessages = true;
+            // Only Owner can manage settings
+            const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
+            // ONLY OWNER can manage users
+            const canManageUsers = role === 'owner';
+
             const { error } = await supabase
                 .from('dashboard_access')
                 .insert({
                     user_id: user.user_id,
-                    role: newUserRole,
-                    can_manage_projects: true,
-                    can_manage_messages: true,
-                    can_manage_settings: newUserRole === 'admin' || newUserRole === 'owner',
-                    can_manage_users: newUserRole === 'admin' || newUserRole === 'owner',
+                    role: role,
+                    can_manage_projects: canManageProjects,
+                    can_manage_messages: canManageMessages,
+                    can_manage_settings: canManageSettings,
+                    can_manage_users: canManageUsers,
                 });
 
             if (error) throw error;
@@ -229,8 +254,9 @@ export default function DashboardUsers() {
             setNewUserRole('editor');
             setFoundUser(null);
             setShowAddModal(false);
-            fetchUsers();
-        } catch {
+            await fetchUsers();
+        } catch (error) {
+            console.error('Error adding user:', error);
             toast.error('Failed to add user');
         } finally {
             setAddingUser(false);
@@ -238,6 +264,11 @@ export default function DashboardUsers() {
     };
 
     const handleRemoveUser = async (userId: string, userName: string) => {
+        if (!canManageUsers) {
+            toast.error('You do not have permission to remove users.');
+            return;
+        }
+
         if (!confirm(`Are you sure you want to remove ${userName}?`)) return;
 
         try {
@@ -249,13 +280,18 @@ export default function DashboardUsers() {
             if (error) throw error;
 
             toast.success('User removed successfully');
-            fetchUsers();
-        } catch {
+            await fetchUsers();
+        } catch (error) {
+            console.error('Error removing user:', error);
             toast.error('Failed to remove user');
         }
     };
 
     const startEditingRole = (userId: string, currentRole: string) => {
+        if (!canManageUsers) {
+            toast.error('You do not have permission to change roles.');
+            return;
+        }
         setEditingRole(userId);
         setTempRole(currentRole as any);
     };
@@ -266,13 +302,27 @@ export default function DashboardUsers() {
     };
 
     const saveRole = async (userId: string) => {
+        if (!canManageUsers) {
+            toast.error('You do not have permission to change roles.');
+            return;
+        }
+
         try {
+            const role = tempRole;
+            const canManageProjects = true;
+            const canManageMessages = true;
+            const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
+            // ONLY OWNER can manage users
+            const canManageUsers = role === 'owner';
+
             const { error } = await supabase
                 .from('dashboard_access')
                 .update({
-                    role: tempRole,
-                    can_manage_settings: tempRole === 'admin' || tempRole === 'owner',
-                    can_manage_users: tempRole === 'admin' || tempRole === 'owner',
+                    role: role,
+                    can_manage_projects: canManageProjects,
+                    can_manage_messages: canManageMessages,
+                    can_manage_settings: canManageSettings,
+                    can_manage_users: canManageUsers,
                 })
                 .eq('user_id', userId);
 
@@ -280,8 +330,9 @@ export default function DashboardUsers() {
 
             toast.success('Role updated successfully');
             setEditingRole(null);
-            fetchUsers();
-        } catch {
+            await fetchUsers();
+        } catch (error) {
+            console.error('Error saving role:', error);
             toast.error('Failed to update role');
         }
     };
@@ -323,13 +374,15 @@ export default function DashboardUsers() {
                             Manage who has access to the dashboard
                         </p>
                     </div>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300"
-                    >
-                        <UserPlus className="h-4 w-4" />
-                        Add User
-                    </button>
+                    {canManageUsers && (
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300"
+                        >
+                            <UserPlus className="h-4 w-4" />
+                            Add User
+                        </button>
+                    )}
                 </motion.div>
 
                 {users.length === 0 ? (
@@ -341,12 +394,14 @@ export default function DashboardUsers() {
                     >
                         <Users className="h-12 w-12 text-[#b8a89a] mx-auto mb-4" />
                         <p className="text-[#8a7a6a]">No users have dashboard access yet.</p>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="mt-4 bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300"
-                        >
-                            Add Your First User
-                        </button>
+                        {canManageUsers && (
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="mt-4 bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300"
+                            >
+                                Add Your First User
+                            </button>
+                        )}
                     </motion.div>
                 ) : (
                     <motion.div
@@ -368,10 +423,10 @@ export default function DashboardUsers() {
                                 <tbody className="divide-y divide-[#f0ebe6]">
                                 {users.map((user, index) => {
                                     const roleInfo = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
-                                    const isOwnerUser = user.role === 'owner';
                                     const displayName = user.display_name || user.username || 'User';
                                     const initial = displayName.charAt(0).toUpperCase() || 'U';
                                     const isEditing = editingRole === user.user_id;
+                                    const isCurrentUser = user.user_id === currentUserId;
 
                                     return (
                                         <motion.tr
@@ -389,8 +444,8 @@ export default function DashboardUsers() {
                                                     <div>
                                                         <p className="font-medium text-[#2c1810] flex items-center gap-1.5">
                                                             {displayName}
-                                                            {isOwnerUser && (
-                                                                <Crown className="h-3.5 w-3.5 text-[#d4c5b0]" />
+                                                            {isCurrentUser && (
+                                                                <span className="text-xs text-[#8a7a6a] ml-1">(you)</span>
                                                             )}
                                                         </p>
                                                         <p className="text-xs text-[#b8a89a]">
@@ -434,13 +489,15 @@ export default function DashboardUsers() {
                                                             <span className={`inline-flex items-center px-3 py-1 text-xs font-medium ${roleInfo.color}`}>
                                                                 {roleInfo.label}
                                                             </span>
-                                                        <button
-                                                            onClick={() => startEditingRole(user.user_id, user.role)}
-                                                            className="p-1 text-[#8a7a6a] hover:text-[#2c1810] hover:bg-[#f8f4f0] transition-colors"
-                                                            title="Edit role"
-                                                        >
-                                                            <Edit2 className="h-3.5 w-3.5" />
-                                                        </button>
+                                                        {canManageUsers && (
+                                                            <button
+                                                                onClick={() => startEditingRole(user.user_id, user.role)}
+                                                                className="p-1 text-[#8a7a6a] hover:text-[#2c1810] hover:bg-[#f8f4f0] transition-colors"
+                                                                title="Edit role"
+                                                            >
+                                                                <Edit2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>
@@ -461,13 +518,18 @@ export default function DashboardUsers() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleRemoveUser(user.user_id, displayName)}
-                                                    className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
-                                                    title="Remove user"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                {canManageUsers && !isCurrentUser && (
+                                                    <button
+                                                        onClick={() => handleRemoveUser(user.user_id, displayName)}
+                                                        className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
+                                                        title="Remove user"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                                {isCurrentUser && (
+                                                    <span className="text-xs text-[#b8a89a]">Cannot remove yourself</span>
+                                                )}
                                             </td>
                                         </motion.tr>
                                     );
@@ -486,7 +548,7 @@ export default function DashboardUsers() {
             </div>
 
             {/* Add User Modal */}
-            {showAddModal && (
+            {showAddModal && canManageUsers && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}

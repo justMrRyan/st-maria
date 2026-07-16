@@ -27,7 +27,7 @@ export default function DashboardProjects() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, []); // <-- ADD THIS EMPTY ARRAY!
 
   const fetchProjects = async () => {
     try {
@@ -167,9 +167,9 @@ export default function DashboardProjects() {
                           )}
                           {project.category && (
                               <div className="absolute top-3 left-3">
-                                                <span className="px-2.5 py-1 bg-[#2c1810]/80 text-white text-xs font-medium backdrop-blur-sm">
-                                                    {project.category}
-                                                </span>
+                        <span className="px-2.5 py-1 bg-[#2c1810]/80 text-white text-xs font-medium backdrop-blur-sm">
+                          {project.category}
+                        </span>
                               </div>
                           )}
                           {/* View Overlay */}
@@ -178,10 +178,10 @@ export default function DashboardProjects() {
                               target="_blank"
                               className="absolute inset-0 bg-[#2c1810]/0 group-hover:bg-[#2c1810]/30 transition-all duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100"
                           >
-                                            <span className="px-4 py-2 bg-white text-[#2c1810] text-sm font-medium transform -translate-y-2 group-hover:translate-y-0 transition-all duration-500 flex items-center gap-2">
-                                                <Eye className="h-4 w-4" />
-                                                View Project
-                                            </span>
+                      <span className="px-4 py-2 bg-white text-[#2c1810] text-sm font-medium transform -translate-y-2 group-hover:translate-y-0 transition-all duration-500 flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        View Project
+                      </span>
                           </Link>
                         </div>
 

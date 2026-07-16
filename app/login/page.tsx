@@ -103,18 +103,18 @@ export default function LoginPage() {
         >
           <div className="bg-white border border-[#f0ebe6] p-8">
             <div className="text-center mb-8">
-              <Link href="/" className="inline-block">
-                <div className="relative w-[180px] h-[40px] mx-auto">
+              <Link href="https://contactini.vercel.app/" className="inline-block">
+                <div className="relative w-[250px] h-[40px] mx-auto">
                   <Image
-                      src="/meryam-logo.svg"
-                      alt="Meryam Swilem"
+                      src="/coflow.svg"
+                      alt="Meryam Swilem & Coflow"
                       fill
                       className="object-contain"
                   />
                 </div>
               </Link>
-              <h1 className="text-2xl font-bold text-[#2c1810] mt-4">Welcome Back</h1>
-              <p className="text-[#8a7a6a] mt-1 text-sm">Sign in to manage your portfolio</p>
+              <h1 className="text-2xl font-bold text-[#2c1810] mt-4">Welcome !</h1>
+              <p className="text-[#8a7a6a] mt-1 text-sm">Sign in with coflow account to manage your portfolio</p>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-2 bg-[#f8f4f0] mb-6">

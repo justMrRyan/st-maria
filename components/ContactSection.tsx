@@ -11,17 +11,15 @@ export function ContactSection() {
     const [form, setForm] = useState({ name: "", email: "", message: "" });
     const [loading, setLoading] = useState(false);
 
+    // components/ContactSection.tsx - Updated handleSubmit
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-
             const { error } = await supabase
                 .from('messages')
                 .insert({
-                    user_id: allowedUserId,
                     name: form.name,
                     email: form.email,
                     message: form.message,
@@ -31,11 +29,11 @@ export function ContactSection() {
 
             if (error) throw error;
 
-            toast.success("Message sent! I'll get back to you soon.");
-            setForm({ name: "", email: "", message: "" });
+            toast.success('Message sent successfully!');
+            setForm({ name: '', email: '', message: '' });
         } catch (error) {
             console.error('Error sending message:', error);
-            toast.error("Failed to send message. Please try again.");
+            toast.error('Failed to send message. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -64,9 +62,9 @@ export function ContactSection() {
 
                     <div className="space-y-6">
                         {[
-                            { icon: Mail, text: "meryam@example.com", href: "mailto:meryam@example.com" },
-                            { icon: Phone, text: "+216 XX XXX XXX", href: "tel:+216XXXXXXXXX" },
-                            { icon: MapPin, text: "Ben Arous, Tunisia" },
+                            { icon: Mail, text: "int.designermeryamswilem@gmail.com", href: "mailto:int.designermeryamswilem@gmail.com" },
+                            { icon: Phone, text: "+216 20 392 003", href: "tel:+21620392003" },
+                            { icon: MapPin, text: "359 Jaafer, Route de Raoued Ariana, Raoued, Tunisia, 2083" },
                         ].map(({ icon: Icon, text, href }) => (
                             <div key={text} className="flex items-center gap-4 group">
                                 <div className="w-10 h-10 rounded-full bg-[#f8f4f0] flex items-center justify-center group-hover:bg-[#d4c5b0] transition-colors duration-300">

@@ -16,12 +16,9 @@ export default function ContactPage() {
         setLoading(true);
 
         try {
-            const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-
             const { error } = await supabase
                 .from('messages')
                 .insert({
-                    user_id: allowedUserId,
                     name: form.name,
                     email: form.email,
                     message: form.message,
@@ -31,7 +28,7 @@ export default function ContactPage() {
 
             if (error) throw error;
 
-            toast.success('Message sent! I\'ll get back to you soon.');
+            toast.success('Message sent successfully!');
             setForm({ name: '', email: '', message: '' });
         } catch (error) {
             console.error('Error sending message:', error);
@@ -40,6 +37,7 @@ export default function ContactPage() {
             setLoading(false);
         }
     };
+
 
     return (
         <>
@@ -162,9 +160,9 @@ export default function ContactPage() {
                                 <h2 className="text-2xl font-bold text-[#2c1810] mb-6">Contact Information</h2>
                                 <div className="space-y-4">
                                     {[
-                                        { icon: Mail, label: 'Email', value: 'meryam@example.com', href: 'mailto:meryam@example.com' },
-                                        { icon: Phone, label: 'Phone', value: '+216 XX XXX XXX', href: 'tel:+216XXXXXXXXX' },
-                                        { icon: MapPin, label: 'Location', value: 'Ben Arous, Tunisia' },
+                                        { icon: Mail, label: 'Email', value: 'int.designermeryamswilem@gmail.com', href: 'mailto:int.designermeryamswilem@gmail.com' },
+                                        { icon: Phone, label: 'Phone', value: '+216 20 392 003', href: 'tel:+21620392003' },
+                                        { icon: MapPin, label: 'Location', value: '359 Jaafer, Route de Raoued Ariana, Raoued, Tunisia, 2083' },
                                         { icon: Clock, label: 'Response Time', value: 'Typically within 24-48 hours' },
                                     ].map((item, index) => (
                                         <motion.div
