@@ -309,11 +309,7 @@ export function Navbar() {
                                             </button>
                                         </Link>
                                     ) : (
-                                        <Link href="/login" onClick={() => setOpen(false)}>
-                                            <button className="w-full px-4 py-2 border border-[#2c1810] text-[#2c1810] hover:bg-[#2c1810] hover:text-white transition-all duration-300 text-sm font-medium rounded-lg">
-                                                Admin Login
-                                            </button>
-                                        </Link>
+ 
                                     )}
                                 </motion.li>
                             </ul>
