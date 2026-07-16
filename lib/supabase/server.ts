@@ -6,7 +6,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const getSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase environment variables are not set');
+    console.warn('⚠️ Supabase environment variables are not set');
     return null;
   }
 
@@ -19,10 +19,10 @@ export const getSupabaseClient = () => {
   });
 };
 
-// For server components that need to fetch data
 export const getSupabaseServer = () => {
   const client = getSupabaseClient();
   if (!client) {
     throw new Error('Supabase client not available');
   }
   return client;
+};
