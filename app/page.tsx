@@ -1,350 +1,40 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import PortfolioGrid from "./PortfolioGrid";
-import { Badge } from "@/components/ui/badge"
-import { Star, Phone, Mail, MapPin, Instagram, Facebook, Linkedin } from "lucide-react"
+// app/route.ts
+import { Navbar } from '@/components/Navbar';
+import { HeroSection } from '@/components/HeroSection';
+import { AboutSection } from '@/components/AboutSection';
+import { PortfolioSection } from '@/components/PortfolioSection';
+import { ContactSection } from '@/components/ContactSection';
+import { Footer } from '@/components/Footer';
+import { getSupabaseClient } from '@/lib/supabase/server';
 
-export default function DecoratorWebsite() {
-  const services = [
-    {
-      title: "Interior Design Consultation",
-      description: "Personalized design solutions tailored to your lifestyle and preferences",
-      price: "Starting at $150/hr",
-    },
-    {
-      title: "Complete Room Makeover",
-      description: "Full-service room transformation from concept to completion",
-      price: "Starting at $2,500",
-    },
-    {
-      title: "Color & Material Selection",
-      description: "Expert guidance on color palettes, textures, and materials",
-      price: "Starting at $300",
-    },
-    {
-      title: "Space Planning",
-      description: "Optimize your space for both functionality and beauty",
-      price: "Starting at $200/hr",
-    },
-  ]
-  function changesrc(newSrc: string | undefined) {
-  return (e: React.MouseEvent<HTMLImageElement>) => {
-    if (newSrc) {
-      e.currentTarget.src = newSrc;
-    }
-  };
-}
+export default async function Home() {
+  const supabase = getSupabaseClient();
 
-  const portfolio = [
-    {
-      title: "Modern Living Room",
-      category: "Residential",
-      image: "/projects/1.jpg",
-      image2: "/projects/12.jpg",
-    },
-    {
-      title: "Luxury Bedroom Suite",
-      category: "Residential",
-      image: "/projects/2.jpg",
-      image2: "/projects/22.jpg",
-    },
-    {
-      title: "Contemporary Kitchen",
-      category: "Residential",
-      image: "/projects/3.jpg",
-      image2: "/projects/32.jpg",
-    },
-    {
-      title: "Executive Office",
-      category: "Commercial",
-      image: "/projects/4.jpg",
-      image2: "/projects/42.jpg",
-    },
-    {
-      title: "Boutique Restaurant",
-      category: "Commercial",
-      image: "/projects/5.jpg",
-      image2: "/projects/52.jpg",
-    },
-    {
-      title: "Cozy Reading Nook",
-      category: "Residential",
-      image: "/projects/6.jpg",
-      image2: "/projects/62.jpg",
-    },
-  ]
-
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      text: "Emma transformed our home into a space we absolutely love. Her attention to detail and understanding of our style was incredible.",
-      rating: 5,
-    },
-    {
-      name: "Michael Chen",
-      text: "Professional, creative, and within budget. Emma made our office renovation seamless and the results exceeded our expectations.",
-      rating: 5,
-    },
-    {
-      name: "Lisa Rodriguez",
-      text: "Working with Emma was a dream. She listened to our needs and created a beautiful, functional space for our growing family.",
-      rating: 5,
-    },
-  ]
+  // Fetch projects for the portfolio section
+  const { data: projects } = await supabase
+      .from('projects')
+      .select('*')
+      .order('date', { ascending: false });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-amber-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-rose-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="text-2xl font-bold text-rose-800"><a href="#top">Meryam Swilem</a></div>
-            <div className="hidden md:flex space-x-8">
-              <a href="#about" className="text-gray-700 hover:text-rose-600 transition-colors active:text-rose-600">
-                About
-              </a>
-              <a href="#services" className="text-gray-700 hover:text-rose-600 transition-colors">
-                Services
-              </a>
-              <a href="#portfolio" className="text-gray-700 hover:text-rose-600 transition-colors">
-                Portfolio
-              </a>
-              <a href="#testimonials" className="text-gray-700 hover:text-rose-600 transition-colors">
-                Testimonials
-              </a>
-              <a href="#contact" className="text-gray-700 hover:text-rose-600 transition-colors">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <>
+        <Navbar />
+        <main className="min-h-screen">
+          {/* Hero Section - Full screen with interior design image */}
+          <HeroSection />
 
-      {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8" id="top">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-                Creating Beautiful
-                <span className="text-rose-600 block">Spaces That Inspire</span>
-              </h1>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3" ><a href="#consultation">
-                  Book Consultation</a>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-rose-600 text-rose-600 hover:bg-rose-50 px-8 py-3 bg-transparent"
-                ><a href="#portfolio">
-                  View Portfolio</a>
-                </Button>
-              </div>
-            </div>
-            <div className="relative">
-              <img
-                src="/main.jpg?height=600&width=500"
-                alt="Emma Claire - Interior Decorator"
-                className="rounded-2xl shadow-2xl"
-              />
-              <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-xl shadow-lg">
-                <div className="text-3xl font-bold text-rose-600">150+</div>
-                <div className="text-gray-600">Happy Clients</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          {/* About Section - Designer portrait and story */}
+          <AboutSection />
 
-      {/* About Section */}
-      <section id="about" className="py-20 bg-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <img src="/about.webp?height=500&width=600" alt="Design Studio" className="rounded-2xl shadow-lg" />
-            </div>
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">About Meryam</h2>
-              <p className="text-lg text-gray-600 mb-6">
-                I'm Meryam Swilem, blending creativity and structure as the owner of my Interior Design Studio and an Interior Design Professor at ISTAM-Tunis. 
-                My foundation combines Civil Engineering (ISET Rades) and Interior Architecture & Design (Collège LaSalle Tunis), 
-                refined through experience like my internship at THREE Engineers and volunteering with AIESEC Egypt. Always evolving, 
-                I’m now pursuing a Master's in Healthcare Leadership & Management (ISET Charguia) to explore design's impact on wellness. 
-                Rooted in Ez Zahra, Tunis, 
-                I shape spaces with purpose.
-              </p>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <div className="text-2xl font-bold text-rose-600">8+</div>
-                  <div className="text-gray-600">Years Experience</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-rose-600">200+</div>
-                  <div className="text-gray-600">Projects Completed</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          {/* Portfolio Section - Masonry grid of projects */}
+          <PortfolioSection projects={projects || []} />
 
-      {/* Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-br from-brown-50 to-rose-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Services</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From initial consultation to final styling, I offer comprehensive design services tailored to your needs
-              and budget.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} className="bg-white hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{service.title}</h3>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  <div className="text-blue-600 font-semibold">{service.price}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-<section id="portfolio" className="py-20 bg-rose-50">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="text-center mb-16">
-      <h2 className="text-4xl font-bold text-gray-900 mb-4">Portfolio</h2>
-      <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-        Explore some of my recent projects and see how I transform spaces into beautiful, functional environments.
-      </p>
-    </div>
-    <div>
-      <PortfolioGrid portfolio={portfolio} />
-    </div>
-  </div>
-</section>
+          {/* Contact Section - Contact form and info */}
+          <ContactSection />
 
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Clients Say</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Don't just take my word for it - hear from some of my wonderful clients about their experience working
-              with me.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white">
-                <CardContent className="p-6">
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-4 italic">"{testimonial.text}"</p>
-                  <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Let's Create Something Beautiful</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Ready to transform your space? I'd love to hear about your project and discuss how we can bring your
-              vision to life.
-            </p>
-          </div>
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-6">Get In Touch</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <Mail className="w-5 h-5 text-rose-600 mr-3" />
-                  <span className="text-gray-600">meryamswilem@gmail.com</span>
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="w-5 h-5 text-rose-600 mr-3" />
-                  <span className="text-gray-600">Tunis, TN</span>
-                </div>
-              </div>
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Follow Me</h4>
-                <div className="flex space-x-4">
-                  <a href="https://www.instagram.com/meryam_swilem/"><Instagram className="w-6 h-6 text-gray-600 hover:text-rose-600 cursor-pointer transition-colors" /></a>
-                  <a href="https://www.facebook.com/MeryamSwilem93"><Facebook className="w-6 h-6 text-gray-600 hover:text-rose-600 cursor-pointer transition-colors" /></a>
-                  <a href="https://instagram.com"><Linkedin className="w-6 h-6 text-gray-600 hover:text-rose-600 cursor-pointer transition-colors" /></a>
-                </div>
-              </div>
-            </div>
-            <Card className="bg-gradient-to-br from-red-100 to-rose-50" id="consultation">
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Book a Consultation</h3>
-                <form className="space-y-4" method="post" action={"mailto:itslichk@duck.com"}>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                      placeholder="Your full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                    <input
-                      type="email"
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Project Type *</label>
-                    <select required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
-                      <option selected disabled>Select a service</option>
-                      <option>Interior Design Consultation</option>
-                      <option>Complete Room Makeover</option>
-                      <option>Color & Material Selection</option>
-                      <option>Space Planning</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                    <textarea
-                      rows={4}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                      placeholder="Tell me about your project..."
-                    ></textarea>
-                  </div>
-                  <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3">Send Message</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-rose-400 mb-4">Meryam Swilem</div>
-            <p className="text-gray-400 mb-4">Creating beautiful spaces that inspire</p>
-            <p className="text-gray-500 text-sm">© 2025 Meryam Swilem . All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
-  )
+          {/* Footer */}
+          <Footer />
+        </main>
+      </>
+  );
 }
