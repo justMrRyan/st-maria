@@ -1,9 +1,10 @@
-// app/dashboard/messages/route.ts
+// app/dashboard/messages/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
+import { motion } from 'framer-motion';
 import {
   Mail,
   CheckCircle,
@@ -11,13 +12,13 @@ import {
   Trash2,
   Reply,
   Calendar,
-  User,
   MessageSquare,
   Sparkles,
   Search,
-  Filter
+  Filter,
+  User,
+  ChevronRight
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface Message {
   id: string;
@@ -124,7 +125,6 @@ export default function DashboardMessages() {
     window.location.href = `mailto:${email}`;
   };
 
-  // Filter messages
   const filteredMessages = messages.filter((message) => {
     const matchesSearch =
         message.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -144,64 +144,81 @@ export default function DashboardMessages() {
   return (
       <>
         <Toaster position="top-right" />
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Header */}
-          <div>
+          <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+          >
             <h1 className="text-3xl font-bold text-[#2c1810]">Messages</h1>
             <p className="text-[#8a7a6a] mt-1">
               View and manage contact form messages
             </p>
-          </div>
+          </motion.div>
 
           {/* Stats */}
-          <div className="flex flex-wrap gap-4">
-            <div className="bg-white rounded-lg border border-[#f0ebe6] px-4 py-2 shadow-sm">
+          <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="flex flex-wrap gap-4"
+          >
+            <div className="bg-white border border-[#f0ebe6] px-4 py-2">
               <span className="text-sm text-[#8a7a6a]">Total</span>
               <span className="ml-2 font-bold text-[#2c1810]">{messages.length}</span>
             </div>
-            <div className="bg-white rounded-lg border border-[#f0ebe6] px-4 py-2 shadow-sm">
+            <div className="bg-white border border-[#f0ebe6] px-4 py-2">
               <span className="text-sm text-[#8a7a6a]">Unread</span>
               <span className="ml-2 font-bold text-[#c0392b]">{unreadCount}</span>
             </div>
-            <div className="bg-white rounded-lg border border-[#f0ebe6] px-4 py-2 shadow-sm">
+            <div className="bg-white border border-[#f0ebe6] px-4 py-2">
               <span className="text-sm text-[#8a7a6a]">Read</span>
               <span className="ml-2 font-bold text-[#27ae60]">{messages.length - unreadCount}</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 items-center">
+          <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-wrap gap-3 items-center"
+          >
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
               <input
                   type="text"
                   placeholder="Search messages..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-[#f0ebe6] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2c1810] text-[#2c1810] placeholder:text-[#b8a89a]"
+                  className="w-full pl-6 pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors placeholder:text-[#b8a89a]"
               />
             </div>
             <select
                 value={filterRead}
                 onChange={(e) => setFilterRead(e.target.value as 'all' | 'read' | 'unread')}
-                className="px-4 py-2 bg-white border border-[#f0ebe6] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2c1810] text-[#2c1810]"
+                className="pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors"
             >
               <option value="all">All Messages</option>
               <option value="unread">Unread</option>
               <option value="read">Read</option>
             </select>
-          </div>
+          </motion.div>
 
           {isLoading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin">
-                  <div className="h-8 w-8 border-4 border-[#2c1810] border-t-transparent rounded-full" />
-                </div>
+                <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
               </div>
           ) : filteredMessages.length === 0 ? (
-              <div className="bg-[#f8f4f0] border border-[#f0ebe6] rounded-xl p-12 text-center">
+              <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="bg-[#f8f4f0] border border-[#f0ebe6] p-12 text-center"
+              >
                 <div className="flex flex-col items-center gap-4">
-                  <div className="rounded-full bg-white p-4 shadow-sm">
+                  <div className="bg-white p-4 shadow-sm">
                     <Sparkles className="h-8 w-8 text-[#8a7a6a]" />
                   </div>
                   <div>
@@ -216,15 +233,23 @@ export default function DashboardMessages() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
           ) : (
-              <div className="grid lg:grid-cols-2 gap-6">
+              <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="grid lg:grid-cols-2 gap-6"
+              >
                 {/* Messages List */}
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                  {filteredMessages.map((message) => (
-                      <div
+                  {filteredMessages.map((message, index) => (
+                      <motion.div
                           key={message.id}
-                          className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          className={`bg-white border p-4 cursor-pointer transition-all hover:shadow-md ${
                               selectedMessage?.id === message.id
                                   ? 'border-[#2c1810] shadow-md'
                                   : 'border-[#f0ebe6] hover:border-[#b8a89a]'
@@ -236,7 +261,7 @@ export default function DashboardMessages() {
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-[#2c1810]">{message.name}</span>
                               {!message.read && (
-                                  <span className="px-2 py-0.5 bg-[#2c1810] text-white text-[10px] rounded-full">New</span>
+                                  <span className="px-2 py-0.5 bg-[#2c1810] text-white text-[10px]">New</span>
                               )}
                             </div>
                             <p className="text-sm text-[#8a7a6a] truncate">{message.email}</p>
@@ -246,12 +271,12 @@ export default function DashboardMessages() {
                       {new Date(message.created_at).toLocaleDateString()}
                     </span>
                         </div>
-                      </div>
+                      </motion.div>
                   ))}
                 </div>
 
                 {/* Message Detail */}
-                <div className="bg-white rounded-xl border border-[#f0ebe6] p-6 shadow-sm sticky top-4">
+                <div className="bg-white border border-[#f0ebe6] p-6 sticky top-4">
                   {selectedMessage ? (
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
@@ -260,35 +285,32 @@ export default function DashboardMessages() {
                             <p className="text-[#8a7a6a]">{selectedMessage.email}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant="outline"
+                            <button
                                 onClick={() => handleMarkRead(selectedMessage.id, selectedMessage.read)}
-                                className="border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0]"
+                                className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] p-2 transition-colors"
+                                title={selectedMessage.read ? 'Mark as unread' : 'Mark as read'}
                             >
                               {selectedMessage.read ? (
                                   <XCircle className="h-4 w-4" />
                               ) : (
                                   <CheckCircle className="h-4 w-4" />
                               )}
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
+                            </button>
+                            <button
                                 onClick={() => handleReply(selectedMessage.email)}
-                                className="border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0]"
+                                className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] p-2 transition-colors"
+                                title="Reply"
                             >
                               <Reply className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="destructive"
+                            </button>
+                            <button
                                 onClick={() => handleDelete(selectedMessage.id)}
                                 disabled={deleting === selectedMessage.id}
-                                className="bg-[#c0392b] hover:bg-[#e74c3c]"
+                                className="bg-[#c0392b] hover:bg-[#e74c3c] text-white p-2 transition-colors disabled:opacity-50"
+                                title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </button>
                           </div>
                         </div>
 
@@ -297,14 +319,14 @@ export default function DashboardMessages() {
                           {formatDate(selectedMessage.created_at)}
                         </div>
 
-                        <div className="bg-[#f8f4f0] rounded-lg p-4">
+                        <div className="bg-[#f8f4f0] p-4">
                           <p className="text-[#2c1810] whitespace-pre-wrap">
                             {selectedMessage.message}
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                        <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 text-xs ${
                         selectedMessage.read
                             ? 'bg-green-100 text-green-700'
                             : 'bg-[#2c1810] text-white'
@@ -321,7 +343,7 @@ export default function DashboardMessages() {
                       </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
           )}
         </div>
       </>

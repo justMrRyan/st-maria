@@ -3,8 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase/client';
 import { Sparkles, FolderOpen } from 'lucide-react';
@@ -53,21 +51,19 @@ export default function ProjectsPage() {
     if (loading) {
         return (
             <>
-                <Navbar />
                 <main className="min-h-screen bg-[#faf8f6] pt-20 flex items-center justify-center">
                     <div className="text-center">
                         <div className="animate-spin h-10 w-10 border-4 border-[#d4c5b0] border-t-transparent rounded-full mx-auto" />
                         <p className="text-[#8a7a6a] mt-4">Loading projects...</p>
                     </div>
                 </main>
-                <Footer />
             </>
         );
     }
 
     return (
         <>
-            <Navbar />
+
             <main className="min-h-screen bg-[#faf8f6]">
                 {/* ─── HERO ────────────────────────────────────────────────── */}
                 <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f8f4f0] via-white to-[#f0ebe6]">
@@ -135,7 +131,6 @@ export default function ProjectsPage() {
                     </div>
                 </section>
             </main>
-            <Footer />
         </>
     );
 }

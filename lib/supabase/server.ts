@@ -26,3 +26,19 @@ export const getSupabaseServer = () => {
   }
   return client;
 };
+
+// Add this if you need admin access (requires SERVICE_ROLE_KEY)
+export const getSupabaseAdmin = () => {
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.warn('⚠️ Supabase admin environment variables are not set');
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};

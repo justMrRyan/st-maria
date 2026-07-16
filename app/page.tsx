@@ -1,5 +1,4 @@
 // app/route.ts
-import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
 import { AboutSection } from '@/components/AboutSection';
 import { PortfolioSection } from '@/components/PortfolioSection';
@@ -18,7 +17,7 @@ export default async function Home() {
 
   return (
       <>
-        <Navbar />
+
         <main className="min-h-screen">
           {/* Hero Section - Full screen with interior design image */}
           <HeroSection />
@@ -32,8 +31,7 @@ export default async function Home() {
           {/* Contact Section - Contact form and info */}
           <ContactSection />
 
-          {/* Footer */}
-          <Footer />
+
         </main>
       </>
   );

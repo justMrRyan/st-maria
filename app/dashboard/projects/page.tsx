@@ -1,13 +1,13 @@
-// app/dashboard/projects/route.ts
+// app/dashboard/projects/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
-import { Plus, Pencil, Trash2, Eye, Calendar, FolderOpen, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Pencil, Trash2, Eye, Calendar, FolderOpen, Sparkles, ArrowRight } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -82,9 +82,14 @@ export default function DashboardProjects() {
   return (
       <>
         <Toaster position="top-right" />
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
             <div>
               <h1 className="text-3xl font-bold text-[#2c1810]">Projects</h1>
               <p className="text-[#8a7a6a] mt-1">
@@ -92,24 +97,27 @@ export default function DashboardProjects() {
               </p>
             </div>
             <Link href="/dashboard/projects/new">
-              <Button className="bg-[#2c1810] hover:bg-[#3d2820] text-white gap-2">
+              <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300">
                 <Plus className="h-4 w-4" />
                 New Project
-              </Button>
+              </button>
             </Link>
-          </div>
+          </motion.div>
 
           {/* Projects Grid */}
           {isLoading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin">
-                  <div className="h-8 w-8 border-4 border-[#2c1810] border-t-transparent rounded-full" />
-                </div>
+                <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
               </div>
           ) : projects.length === 0 ? (
-              <div className="bg-[#f8f4f0] border border-[#f0ebe6] rounded-xl p-12 text-center">
+              <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="bg-[#f8f4f0] border border-[#f0ebe6] p-12 text-center"
+              >
                 <div className="flex flex-col items-center gap-4">
-                  <div className="rounded-full bg-white p-4 shadow-sm">
+                  <div className="bg-white p-4 shadow-sm">
                     <Sparkles className="h-8 w-8 text-[#8a7a6a]" />
                   </div>
                   <div>
@@ -119,21 +127,29 @@ export default function DashboardProjects() {
                     </p>
                   </div>
                   <Link href="/dashboard/projects/new">
-                    <Button className="bg-[#2c1810] hover:bg-[#3d2820] text-white gap-2">
+                    <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2">
                       <Plus className="h-4 w-4" />
                       Create Your First Project
-                    </Button>
+                    </button>
                   </Link>
                 </div>
-              </div>
+              </motion.div>
           ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => {
+              <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {projects.map((project, index) => {
                   const imageUrl = getImageUrl(project.images);
                   return (
-                      <div
+                      <motion.div
                           key={project.id}
-                          className="group bg-white rounded-xl border border-[#f0ebe6] overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: index * 0.05 }}
+                          className="group bg-white border border-[#f0ebe6] overflow-hidden transition-all duration-300 hover:shadow-md hover:border-[#d4c5b0]"
                       >
                         {/* Image */}
                         <div className="relative w-full aspect-[4/3] bg-[#f8f4f0] overflow-hidden">
@@ -151,17 +167,28 @@ export default function DashboardProjects() {
                           )}
                           {project.category && (
                               <div className="absolute top-3 left-3">
-                        <span className="px-2.5 py-1 bg-[#2c1810]/80 text-white text-xs font-medium rounded-full backdrop-blur-sm">
-                          {project.category}
-                        </span>
+                                                <span className="px-2.5 py-1 bg-[#2c1810]/80 text-white text-xs font-medium backdrop-blur-sm">
+                                                    {project.category}
+                                                </span>
                               </div>
                           )}
+                          {/* View Overlay */}
+                          <Link
+                              href={`/projects/${project.id}`}
+                              target="_blank"
+                              className="absolute inset-0 bg-[#2c1810]/0 group-hover:bg-[#2c1810]/30 transition-all duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                          >
+                                            <span className="px-4 py-2 bg-white text-[#2c1810] text-sm font-medium transform -translate-y-2 group-hover:translate-y-0 transition-all duration-500 flex items-center gap-2">
+                                                <Eye className="h-4 w-4" />
+                                                View Project
+                                            </span>
+                          </Link>
                         </div>
 
                         {/* Content */}
                         <div className="p-4 space-y-3">
                           <div>
-                            <h3 className="font-semibold text-lg text-[#2c1810] line-clamp-1 group-hover:text-[#8a7a6a] transition-colors">
+                            <h3 className="font-semibold text-lg text-[#2c1810] line-clamp-1 group-hover:text-[#d4c5b0] transition-colors">
                               {project.title}
                             </h3>
                             {project.date && (
@@ -188,42 +215,30 @@ export default function DashboardProjects() {
                                 href={`/dashboard/projects/${project.id}/edit`}
                                 className="flex-1"
                             >
-                              <Button variant="outline" size="sm" className="w-full gap-1 border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0]">
+                              <button className="w-full border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] px-3 py-1.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-1">
                                 <Pencil className="h-3.5 w-3.5" />
                                 Edit
-                              </Button>
+                              </button>
                             </Link>
-                            <Link
-                                href={`/projects/${project.id}`}
-                                target="_blank"
-                                className="flex-1"
-                            >
-                              <Button variant="outline" size="sm" className="w-full gap-1 border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0]">
-                                <Eye className="h-3.5 w-3.5" />
-                                View
-                              </Button>
-                            </Link>
-                            <Button
-                                variant="destructive"
-                                size="sm"
+                            <button
                                 onClick={() => handleDelete(project.id)}
                                 disabled={deleting === project.id}
-                                className="gap-1 bg-[#c0392b] hover:bg-[#e74c3c]"
+                                className="flex-1 bg-[#c0392b] hover:bg-[#e74c3c] text-white px-3 py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-1"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                              {deleting === project.id ? '...' : ''}
-                            </Button>
+                              {deleting === project.id ? '...' : 'Delete'}
+                            </button>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
           )}
 
           {projects.length > 0 && (
-              <div className="text-sm text-[#b8a89a] text-center pt-4 border-t border-[#f0ebe6]">
-                Showing {projects.length} project{projects.length !== 1 ? 's' : ''}
+              <div className="text-center text-sm text-[#b8a89a] pt-4 border-t border-[#f0ebe6]">
+                Showing <span className="font-medium text-[#2c1810]">{projects.length}</span> project{projects.length !== 1 ? 's' : ''}
               </div>
           )}
         </div>

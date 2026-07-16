@@ -1,35 +1,127 @@
-// app/dashboard/users/route.ts
+// app/dashboard/users/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { DashboardAccess, DashboardRole, ROLE_PERMISSIONS } from '@/types/dashboard';
-import { useDashboardAccess } from '@/lib/hooks/useDashboardAccess';
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
-import { UserPlus, Trash2, Shield, Users, Sparkles, X, Mail, User, Crown, Edit2, Save, XCircle } from 'lucide-react';
+import {
+    UserPlus,
+    Trash2,
+    Shield,
+    Users,
+    Sparkles,
+    X,
+    User,
+    Crown,
+    Edit2,
+    Save,
+    XCircle,
+    Loader2
+} from 'lucide-react';
+
+interface DashboardAccess {
+    id: string;
+    user_id: string;
+    role: 'owner' | 'admin' | 'editor' | 'viewer';
+    can_manage_projects: boolean;
+    can_manage_messages: boolean;
+    can_manage_settings: boolean;
+    can_manage_users: boolean;
+    created_at: string;
+    updated_at: string;
+    created_by: string;
+}
+
+const ROLE_PERMISSIONS = {
+    owner: {
+        label: 'Owner',
+        description: 'Full access to everything',
+        color: 'bg-[#2c1810] text-white',
+    },
+    admin: {
+        label: 'Admin',
+        description: 'Can manage all content and users',
+        color: 'bg-blue-100 text-blue-700',
+    },
+    editor: {
+        label: 'Editor',
+        description: 'Can manage projects and messages',
+        color: 'bg-green-100 text-green-700',
+    },
+    viewer: {
+        label: 'Viewer',
+        description: 'Can only view content',
+        color: 'bg-gray-100 text-gray-700',
+    }
+};
+
+const ROLES = ['owner', 'admin', 'editor', 'viewer'];
 
 export default function DashboardUsers() {
-    const { isOwner, canManageUsers, access: currentUserAccess } = useDashboardAccess();
-    const [users, setUsers] = useState<DashboardAccess[]>([]);
+    const [users, setUsers] = useState<(DashboardAccess & { display_name: string; username: string })[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newUserEmail, setNewUserEmail] = useState('');
-    const [newUserRole, setNewUserRole] = useState<DashboardRole>('editor');
+    const [newUserUsername, setNewUserUsername] = useState('');
+    const [newUserRole, setNewUserRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
     const [addingUser, setAddingUser] = useState(false);
     const [editingRole, setEditingRole] = useState<string | null>(null);
-    const [tempRole, setTempRole] = useState<DashboardRole>('editor');
+    const [tempRole, setTempRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
     const [searchingUser, setSearchingUser] = useState(false);
-    const [userData, setUserData] = useState<{ id: string; email: string } | null>(null);
+    const [foundUser, setFoundUser] = useState<{ user_id: string; username: string; display_name: string } | null>(null);
+    const [canManageUsers, setCanManageUsers] = useState(false);
+    const [checkingPermission, setCheckingPermission] = useState(true);
 
     useEffect(() => {
-        if (canManageUsers) {
+        const checkPermission = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (!user) {
+                    setCheckingPermission(false);
+                    setLoading(false);
+                    return;
+                }
+
+                // Hardcode owner check for now
+                const ownerId = '7fae0150-58f2-4119-8384-438e135d8f3a';
+                if (user.id === ownerId) {
+                    setCanManageUsers(true);
+                    setCheckingPermission(false);
+                    return;
+                }
+
+                const { data: access } = await supabase
+                    .from('dashboard_access')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                if (access) {
+                    setCanManageUsers(access.can_manage_users || access.role === 'owner');
+                }
+            } catch {
+                setCanManageUsers(false);
+            } finally {
+                setCheckingPermission(false);
+            }
+        };
+
+        checkPermission();
+    }, []);
+
+    useEffect(() => {
+        if (!checkingPermission && canManageUsers) {
             fetchUsers();
+        } else if (!checkingPermission && !canManageUsers) {
+            setLoading(false);
         }
-    }, [canManageUsers]);
+    }, [checkingPermission, canManageUsers]);
 
     const fetchUsers = async () => {
         try {
+            setLoading(true);
+
             const { data: accessData, error: accessError } = await supabase
                 .from('dashboard_access')
                 .select('*')
@@ -45,70 +137,47 @@ export default function DashboardUsers() {
 
             const userIds = accessData.map(u => u.user_id);
 
-            const { data: profiles, error: profilesError } = await supabase
+            const { data: profiles } = await supabase
                 .from('Profile')
                 .select('id, display_name, username')
                 .in('id', userIds);
 
-            if (profilesError) {
-                console.error('Error fetching profiles:', profilesError);
-            }
-
             const usersWithInfo = accessData.map(user => {
                 const profile = profiles?.find(p => p.id === user.user_id);
-
-                const displayName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'User';
-
                 return {
                     ...user,
-                    display_name: displayName,
+                    display_name: profile?.display_name || 'User',
                     username: profile?.username || '',
                 };
             });
 
             setUsers(usersWithInfo);
-        } catch (error) {
-            console.error('Error fetching users:', error);
+        } catch {
             toast.error('Failed to fetch users');
         } finally {
             setLoading(false);
         }
     };
 
-    const checkUserExists = async (email: string) => {
+    const checkUserExists = async (username: string) => {
         setSearchingUser(true);
-        setUserData(null);
+        setFoundUser(null);
 
         try {
-            console.log('🔍 Checking user with email:', email);
-
-            // Try the RPC call
             const { data, error } = await supabase
-                .rpc('get_user_by_email', { email_input: email });
+                .rpc('get_user_by_username', { username_input: username });
 
-            console.log('📦 RPC Response:', { data, error });
-
-            if (error) {
-                console.error('❌ RPC Error details:', error);
-
-                // If RPC fails, try a different approach - query the Profile table
-                // This is a fallback for testing
-                toast.error('Could not verify user. Please try again.');
-                return null;
-            }
-
-            if (!data || data.length === 0) {
-                toast.error('User not found. Make sure they have an account.');
+            if (error || !data || data.length === 0) {
+                toast.error('User not found. Make sure they have a Coflow account.');
                 return null;
             }
 
             const user = data[0];
-            setUserData(user);
-            toast.success('User found!');
+            setFoundUser(user);
+            toast.success('User found: ' + (user.display_name || user.username));
             return user;
-        } catch (error) {
-            console.error('❌ Error checking user:', error);
-            toast.error('Failed to check user. Please try again.');
+        } catch {
+            toast.error('Failed to check user');
             return null;
         } finally {
             setSearchingUser(false);
@@ -116,27 +185,25 @@ export default function DashboardUsers() {
     };
 
     const handleAddUser = async () => {
-        if (!newUserEmail) {
-            toast.error('Please enter an email address');
+        if (!newUserUsername) {
+            toast.error('Please enter a username');
             return;
         }
 
         setAddingUser(true);
         try {
-            // Check if user exists
-            const user = await checkUserExists(newUserEmail);
+            const user = await checkUserExists(newUserUsername);
 
             if (!user) {
                 setAddingUser(false);
                 return;
             }
 
-            // Check if user already has access
-            const { data: existing, error: checkError } = await supabase
+            const { data: existing } = await supabase
                 .from('dashboard_access')
                 .select('id')
-                .eq('user_id', user.id)
-                .single();
+                .eq('user_id', user.user_id)
+                .maybeSingle();
 
             if (existing) {
                 toast.error('User already has dashboard access.');
@@ -147,26 +214,23 @@ export default function DashboardUsers() {
             const { error } = await supabase
                 .from('dashboard_access')
                 .insert({
-                    user_id: user.id,
-                    email: newUserEmail,
+                    user_id: user.user_id,
                     role: newUserRole,
                     can_manage_projects: true,
                     can_manage_messages: true,
                     can_manage_settings: newUserRole === 'admin' || newUserRole === 'owner',
                     can_manage_users: newUserRole === 'admin' || newUserRole === 'owner',
-                    created_by: (await supabase.auth.getUser()).data.user?.id,
                 });
 
             if (error) throw error;
 
             toast.success('User added successfully');
-            setNewUserEmail('');
+            setNewUserUsername('');
             setNewUserRole('editor');
-            setUserData(null);
+            setFoundUser(null);
             setShowAddModal(false);
             fetchUsers();
-        } catch (error) {
-            console.error('Error adding user:', error);
+        } catch {
             toast.error('Failed to add user');
         } finally {
             setAddingUser(false);
@@ -186,15 +250,14 @@ export default function DashboardUsers() {
 
             toast.success('User removed successfully');
             fetchUsers();
-        } catch (error) {
-            console.error('Error removing user:', error);
+        } catch {
             toast.error('Failed to remove user');
         }
     };
 
-    const startEditingRole = (userId: string, currentRole: DashboardRole) => {
+    const startEditingRole = (userId: string, currentRole: string) => {
         setEditingRole(userId);
-        setTempRole(currentRole);
+        setTempRole(currentRole as any);
     };
 
     const cancelEditingRole = () => {
@@ -218,18 +281,28 @@ export default function DashboardUsers() {
             toast.success('Role updated successfully');
             setEditingRole(null);
             fetchUsers();
-        } catch (error) {
-            console.error('Error updating role:', error);
+        } catch {
             toast.error('Failed to update role');
         }
     };
+
+    if (checkingPermission || loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <Loader2 className="h-8 w-8 text-[#d4c5b0] animate-spin mx-auto" />
+                    <p className="text-[#8a7a6a] mt-4">Loading users...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!canManageUsers) {
         return (
             <div className="text-center py-20">
                 <Shield className="h-16 w-16 text-[#b8a89a] mx-auto mb-4" />
                 <p className="text-lg font-medium text-[#2c1810]">Access Denied</p>
-                <p className="text-sm text-[#8a7a6a] mt-1">You don't have permission to manage users.</p>
+                <p className="text-sm text-[#8a7a6a] mt-1">You do not have permission to manage users.</p>
             </div>
         );
     }
@@ -259,11 +332,7 @@ export default function DashboardUsers() {
                     </button>
                 </motion.div>
 
-                {loading ? (
-                    <div className="flex justify-center py-12">
-                        <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
-                    </div>
-                ) : users.length === 0 ? (
+                {users.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -298,7 +367,7 @@ export default function DashboardUsers() {
                                 </thead>
                                 <tbody className="divide-y divide-[#f0ebe6]">
                                 {users.map((user, index) => {
-                                    const roleInfo = ROLE_PERMISSIONS[user.role];
+                                    const roleInfo = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
                                     const isOwnerUser = user.role === 'owner';
                                     const displayName = user.display_name || user.username || 'User';
                                     const initial = displayName.charAt(0).toUpperCase() || 'U';
@@ -325,7 +394,7 @@ export default function DashboardUsers() {
                                                             )}
                                                         </p>
                                                         <p className="text-xs text-[#b8a89a]">
-                                                            @{user.username || 'user'} • {user.email || 'No email'}
+                                                            @{user.username || 'user'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -335,14 +404,15 @@ export default function DashboardUsers() {
                                                     <div className="flex items-center gap-2">
                                                         <select
                                                             value={tempRole}
-                                                            onChange={(e) => setTempRole(e.target.value as DashboardRole)}
+                                                            onChange={(e) => setTempRole(e.target.value as any)}
                                                             className="px-2 py-1 border border-[#f0ebe6] text-sm focus:outline-none focus:border-[#d4c5b0] bg-white text-[#2c1810]"
                                                             autoFocus
                                                         >
-                                                            <option value="owner">Owner</option>
-                                                            <option value="admin">Admin</option>
-                                                            <option value="editor">Editor</option>
-                                                            <option value="viewer">Viewer</option>
+                                                            {ROLES.map((role) => (
+                                                                <option key={role} value={role}>
+                                                                    {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                         <button
                                                             onClick={() => saveRole(user.user_id)}
@@ -361,8 +431,7 @@ export default function DashboardUsers() {
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-2">
-                                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium ${roleInfo.color}`}>
-                                                                <span>{roleInfo.icon}</span>
+                                                            <span className={`inline-flex items-center px-3 py-1 text-xs font-medium ${roleInfo.color}`}>
                                                                 {roleInfo.label}
                                                             </span>
                                                         <button
@@ -438,23 +507,25 @@ export default function DashboardUsers() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
-                                    Email Address
+                                    Username
                                 </label>
                                 <div className="relative">
-                                    <Mail className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
+                                    <User className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
                                     <input
-                                        type="email"
-                                        value={newUserEmail}
-                                        onChange={(e) => setNewUserEmail(e.target.value)}
+                                        type="text"
+                                        value={newUserUsername}
+                                        onChange={(e) => setNewUserUsername(e.target.value)}
                                         className="w-full pl-6 pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors placeholder:text-[#b8a89a]"
-                                        placeholder="user@example.com"
+                                        placeholder="@username"
                                     />
                                 </div>
                                 {searchingUser && (
-                                    <div className="mt-2 text-sm text-[#8a7a6a]">Checking user...</div>
+                                    <div className="mt-2 text-sm text-[#8a7a6a]">Searching for user...</div>
                                 )}
-                                {userData && (
-                                    <div className="mt-2 text-sm text-[#27ae60]">User found! Ready to add.</div>
+                                {foundUser && (
+                                    <div className="mt-2 text-sm text-green-600">
+                                        User found: {foundUser.display_name || foundUser.username}
+                                    </div>
                                 )}
                             </div>
 
@@ -464,12 +535,14 @@ export default function DashboardUsers() {
                                 </label>
                                 <select
                                     value={newUserRole}
-                                    onChange={(e) => setNewUserRole(e.target.value as DashboardRole)}
+                                    onChange={(e) => setNewUserRole(e.target.value as any)}
                                     className="w-full pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors"
                                 >
-                                    <option value="editor">Editor</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="viewer">Viewer</option>
+                                    {ROLES.map((role) => (
+                                        <option key={role} value={role}>
+                                            {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 

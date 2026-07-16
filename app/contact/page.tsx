@@ -2,8 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -45,7 +43,6 @@ export default function ContactPage() {
 
     return (
         <>
-            <Navbar />
             <main className="min-h-screen bg-[#faf8f6]">
                 {/* ─── HERO ────────────────────────────────────────────────── */}
                 <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f8f4f0] via-white to-[#f0ebe6] overflow-hidden">
@@ -222,7 +219,6 @@ export default function ContactPage() {
                     </div>
                 </section>
             </main>
-            <Footer />
         </>
     );
 }

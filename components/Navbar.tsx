@@ -204,11 +204,6 @@ export function Navbar() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: 0.2 }}
                         >
-                            <Link href="/login">
-                                <button className="px-4 py-2 border border-[#2c1810] text-[#2c1810] hover:bg-[#2c1810] hover:text-white transition-all duration-300 text-sm font-medium">
-                                    Admin
-                                </button>
-                            </Link>
                         </motion.li>
                     )}
                 </motion.ul>

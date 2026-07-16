@@ -22,26 +22,22 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
-          console.log('❌ No session, redirecting to login');
           router.push('/login');
           return;
         }
 
         // Check if user is the allowed owner (hardcoded)
         const allowedUserId = process.env.NEXT_PUBLIC_ALLOWED_USER_ID;
-        console.log('👤 User ID:', session.user.id);
-        console.log('🔑 Allowed ID:', allowedUserId);
 
         if (session.user.id === allowedUserId) {
-          console.log('✅ User authorized!');
+
           setAuthorized(true);
         } else {
-          console.log('❌ User not authorized');
+
           await supabase.auth.signOut();
           router.push('/unauthorized');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
         router.push('/login');
       } finally {
         setLoading(false);
