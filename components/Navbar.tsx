@@ -225,11 +225,6 @@ export function Navbar() {
                             custom={navLinks.length}
                             variants={navItemVariants}
                         >
-                            <Link href="/login">
-                                <button className="px-4 py-2 border border-[#2c1810] text-[#2c1810] hover:bg-[#2c1810] hover:text-white transition-all duration-300 text-sm font-medium rounded-lg">
-                                    Admin
-                                </button>
-                            </Link>
                         </motion.li>
                     )}
                 </motion.ul>
