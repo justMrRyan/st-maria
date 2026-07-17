@@ -304,13 +304,11 @@ export function Navbar() {
                                     ) : isLoggedIn ? (
                                         <Link href="/dashboard" onClick={() => setOpen(false)}>
                                             <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#2c1810] text-white hover:bg-[#3d2820] transition-all duration-300 text-sm font-medium rounded-lg shadow-sm">
-                                                <LayoutDashboard className="w-4 h-4" />
+                                                <LayoutDashboard className="w-4 h-5" />
                                                 Dashboard
                                             </button>
                                         </Link>
-                                    ) : (
- 
-                                    )}
+                                    ) : null}
                                 </motion.li>
                             </ul>
                         </div>
