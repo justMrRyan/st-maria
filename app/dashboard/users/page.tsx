@@ -5,628 +5,623 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
-    UserPlus,
-    Trash2,
-    Shield,
-    Users,
-    Sparkles,
-    X,
-    User,
-    Crown,
-    Edit2,
-    Save,
-    XCircle,
-    Loader2
+  UserPlus,
+  Trash2,
+  Shield,
+  Users,
+  Sparkles,
+  X,
+  User,
+  Crown,
+  Edit2,
+  Save,
+  XCircle,
+  Loader2
 } from 'lucide-react';
 
 interface DashboardAccess {
-    id: string;
-    user_id: string;
-    role: 'owner' | 'admin' | 'editor' | 'viewer';
-    can_manage_projects: boolean;
-    can_manage_messages: boolean;
-    can_manage_settings: boolean;
-    can_manage_users: boolean;
-    created_at: string;
-    updated_at: string;
-    created_by: string;
+  id: string;
+  user_id: string;
+  role: 'owner' | 'admin' | 'editor' | 'viewer';
+  can_manage_projects: boolean;
+  can_manage_messages: boolean;
+  can_manage_settings: boolean;
+  can_manage_users: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
 }
 
 const ROLE_PERMISSIONS = {
-    owner: {
-        label: 'Owner',
-        description: 'Full access to everything',
-        color: 'bg-[#2c1810] text-white',
-        permissions: ['Projects', 'Messages', 'Settings', 'Users']
-    },
-    admin: {
-        label: 'Admin',
-        description: 'Can manage all content',
-        color: 'bg-blue-100 text-blue-700',
-        permissions: ['Projects', 'Messages', 'Settings']
-    },
-    editor: {
-        label: 'Editor',
-        description: 'Can manage projects and messages',
-        color: 'bg-green-100 text-green-700',
-        permissions: ['Projects', 'Messages']
-    },
-    viewer: {
-        label: 'Viewer',
-        description: 'Can only view content',
-        color: 'bg-gray-100 text-gray-700',
-        permissions: []
-    }
+  owner: {
+    label: 'Owner',
+    description: 'Full access to everything',
+    color: 'bg-[#2c1810] text-white',
+    permissions: ['Projects', 'Messages', 'Settings', 'Users']
+  },
+  admin: {
+    label: 'Admin',
+    description: 'Can manage all content',
+    color: 'bg-blue-100 text-blue-700',
+    permissions: ['Projects', 'Messages', 'Settings']
+  },
+  editor: {
+    label: 'Editor',
+    description: 'Can manage projects and messages',
+    color: 'bg-green-100 text-green-700',
+    permissions: ['Projects', 'Messages']
+  },
+  viewer: {
+    label: 'Viewer',
+    description: 'Can only view content',
+    color: 'bg-gray-100 text-gray-700',
+    permissions: []
+  }
 };
 
 const ROLES = ['owner', 'admin', 'editor', 'viewer'];
 
 export default function DashboardUsers() {
-    const [users, setUsers] = useState<(DashboardAccess & { display_name: string; username: string })[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newUserUsername, setNewUserUsername] = useState('');
-    const [newUserRole, setNewUserRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
-    const [addingUser, setAddingUser] = useState(false);
-    const [editingRole, setEditingRole] = useState<string | null>(null);
-    const [tempRole, setTempRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
-    const [searchingUser, setSearchingUser] = useState(false);
-    const [foundUser, setFoundUser] = useState<{ user_id: string; username: string; display_name: string } | null>(null);
-    const [canManageUsers, setCanManageUsers] = useState(false);
-    const [checkingPermission, setCheckingPermission] = useState(true);
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [users, setUsers] = useState<(DashboardAccess & { display_name: string; username: string; pfp_url?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
+  const [addingUser, setAddingUser] = useState(false);
+  const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [tempRole, setTempRole] = useState<'owner' | 'admin' | 'editor' | 'viewer'>('editor');
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [foundUser, setFoundUser] = useState<{ user_id: string; username: string; display_name: string } | null>(null);
+  const [canManageUsers, setCanManageUsers] = useState(false);
+  const [checkingPermission, setCheckingPermission] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    useEffect(() => {
-        const checkPermission = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setCheckingPermission(false);
+          setLoading(false);
+          return;
+        }
+        setCurrentUserId(user.id);
 
-                if (!user) {
-                    setCheckingPermission(false);
-                    setLoading(false);
-                    return;
-                }
+        const { data: access, error } = await supabase
+          .from('dashboard_access')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-                setCurrentUserId(user.id);
+        if (error) {
+          console.error('Error fetching access:', error);
+          setCanManageUsers(false);
+          setCheckingPermission(false);
+          return;
+        }
 
-                const { data: access, error } = await supabase
-                    .from('dashboard_access')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
+        if (access) {
+          setCanManageUsers(access.can_manage_users === true);
+        } else {
+          setCanManageUsers(false);
+        }
+      } catch (error) {
+        console.error('Error in checkPermission:', error);
+        setCanManageUsers(false);
+      } finally {
+        setCheckingPermission(false);
+      }
+    };
 
-                if (error) {
-                    console.error('Error fetching access:', error);
-                    setCanManageUsers(false);
-                    setCheckingPermission(false);
-                    return;
-                }
+    checkPermission();
+  }, []);
 
-                if (access) {
-                    // Only users with can_manage_users = true can manage users
-                    setCanManageUsers(access.can_manage_users === true);
-                } else {
-                    setCanManageUsers(false);
-                }
-            } catch (error) {
-                console.error('Error in checkPermission:', error);
-                setCanManageUsers(false);
-            } finally {
-                setCheckingPermission(false);
-            }
+  useEffect(() => {
+    if (!checkingPermission && canManageUsers) {
+      fetchUsers();
+    } else if (!checkingPermission && !canManageUsers) {
+      setLoading(false);
+    }
+  }, [checkingPermission, canManageUsers]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+
+      const { data: accessData, error: accessError } = await supabase
+        .from('dashboard_access')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (accessError) throw accessError;
+
+      if (!accessData || accessData.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      const userIds = accessData.map(u => u.user_id);
+
+      const { data: profiles } = await supabase
+        .from('Profile')
+        .select('id, display_name, username, pfp_url')  // ← added pfp_url
+        .in('id', userIds);
+
+      const usersWithInfo = accessData.map(user => {
+        const profile = profiles?.find(p => p.id === user.user_id);
+        return {
+          ...user,
+          display_name: profile?.display_name || 'User',
+          username: profile?.username || '',
+          pfp_url: profile?.pfp_url || null,
         };
+      });
 
-        checkPermission();
-    }, []);
+      setUsers(usersWithInfo);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        if (!checkingPermission && canManageUsers) {
-            fetchUsers();
-        } else if (!checkingPermission && !canManageUsers) {
-            setLoading(false);
-        }
-    }, [checkingPermission, canManageUsers]);
+  const checkUserExists = async (username: string) => {
+    setSearchingUser(true);
+    setFoundUser(null);
 
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .rpc('get_user_by_username', { username_input: username });
 
-            const { data: accessData, error: accessError } = await supabase
-                .from('dashboard_access')
-                .select('*')
-                .order('created_at', { ascending: false });
+      if (error || !data || data.length === 0) {
+        toast.error('User not found. Make sure they have a Coflow account.');
+        return null;
+      }
 
-            if (accessError) throw accessError;
+      const user = data[0];
+      setFoundUser(user);
+      toast.success('User found: ' + (user.display_name || user.username));
+      return user;
+    } catch (error) {
+      console.error('Error checking user:', error);
+      toast.error('Failed to check user');
+      return null;
+    } finally {
+      setSearchingUser(false);
+    }
+  };
 
-            if (!accessData || accessData.length === 0) {
-                setUsers([]);
-                setLoading(false);
-                return;
-            }
-
-            const userIds = accessData.map(u => u.user_id);
-
-            const { data: profiles } = await supabase
-                .from('Profile')
-                .select('id, display_name, username')
-                .in('id', userIds);
-
-            const usersWithInfo = accessData.map(user => {
-                const profile = profiles?.find(p => p.id === user.user_id);
-                return {
-                    ...user,
-                    display_name: profile?.display_name || 'User',
-                    username: profile?.username || '',
-                };
-            });
-
-            setUsers(usersWithInfo);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            toast.error('Failed to fetch users');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const checkUserExists = async (username: string) => {
-        setSearchingUser(true);
-        setFoundUser(null);
-
-        try {
-            const { data, error } = await supabase
-                .rpc('get_user_by_username', { username_input: username });
-
-            if (error || !data || data.length === 0) {
-                toast.error('User not found. Make sure they have a Coflow account.');
-                return null;
-            }
-
-            const user = data[0];
-            setFoundUser(user);
-            toast.success('User found: ' + (user.display_name || user.username));
-            return user;
-        } catch (error) {
-            console.error('Error checking user:', error);
-            toast.error('Failed to check user');
-            return null;
-        } finally {
-            setSearchingUser(false);
-        }
-    };
-
-    const handleAddUser = async () => {
-        if (!newUserUsername) {
-            toast.error('Please enter a username');
-            return;
-        }
-
-        if (!canManageUsers) {
-            toast.error('You do not have permission to add users.');
-            return;
-        }
-
-        setAddingUser(true);
-        try {
-            const user = await checkUserExists(newUserUsername);
-
-            if (!user) {
-                setAddingUser(false);
-                return;
-            }
-
-            const { data: existing } = await supabase
-                .from('dashboard_access')
-                .select('id')
-                .eq('user_id', user.user_id)
-                .maybeSingle();
-
-            if (existing) {
-                toast.error('User already has dashboard access.');
-                setAddingUser(false);
-                return;
-            }
-
-            const role = newUserRole;
-            const canManageProjects = true;
-            const canManageMessages = true;
-            // Only Owner can manage settings
-            const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
-            // ONLY OWNER can manage users
-            const canManageUsers = role === 'owner';
-
-            const { error } = await supabase
-                .from('dashboard_access')
-                .insert({
-                    user_id: user.user_id,
-                    role: role,
-                    can_manage_projects: canManageProjects,
-                    can_manage_messages: canManageMessages,
-                    can_manage_settings: canManageSettings,
-                    can_manage_users: canManageUsers,
-                });
-
-            if (error) throw error;
-
-            toast.success('User added successfully');
-            setNewUserUsername('');
-            setNewUserRole('editor');
-            setFoundUser(null);
-            setShowAddModal(false);
-            await fetchUsers();
-        } catch (error) {
-            console.error('Error adding user:', error);
-            toast.error('Failed to add user');
-        } finally {
-            setAddingUser(false);
-        }
-    };
-
-    const handleRemoveUser = async (userId: string, userName: string) => {
-        if (!canManageUsers) {
-            toast.error('You do not have permission to remove users.');
-            return;
-        }
-
-        if (!confirm(`Are you sure you want to remove ${userName}?`)) return;
-
-        try {
-            const { error } = await supabase
-                .from('dashboard_access')
-                .delete()
-                .eq('user_id', userId);
-
-            if (error) throw error;
-
-            toast.success('User removed successfully');
-            await fetchUsers();
-        } catch (error) {
-            console.error('Error removing user:', error);
-            toast.error('Failed to remove user');
-        }
-    };
-
-    const startEditingRole = (userId: string, currentRole: string) => {
-        if (!canManageUsers) {
-            toast.error('You do not have permission to change roles.');
-            return;
-        }
-        setEditingRole(userId);
-        setTempRole(currentRole as any);
-    };
-
-    const cancelEditingRole = () => {
-        setEditingRole(null);
-        setTempRole('editor');
-    };
-
-    const saveRole = async (userId: string) => {
-        if (!canManageUsers) {
-            toast.error('You do not have permission to change roles.');
-            return;
-        }
-
-        try {
-            const role = tempRole;
-            const canManageProjects = true;
-            const canManageMessages = true;
-            const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
-            // ONLY OWNER can manage users
-            const canManageUsers = role === 'owner';
-
-            const { error } = await supabase
-                .from('dashboard_access')
-                .update({
-                    role: role,
-                    can_manage_projects: canManageProjects,
-                    can_manage_messages: canManageMessages,
-                    can_manage_settings: canManageSettings,
-                    can_manage_users: canManageUsers,
-                })
-                .eq('user_id', userId);
-
-            if (error) throw error;
-
-            toast.success('Role updated successfully');
-            setEditingRole(null);
-            await fetchUsers();
-        } catch (error) {
-            console.error('Error saving role:', error);
-            toast.error('Failed to update role');
-        }
-    };
-
-    if (checkingPermission || loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                    <Loader2 className="h-8 w-8 text-[#d4c5b0] animate-spin mx-auto" />
-                    <p className="text-[#8a7a6a] mt-4">Loading users...</p>
-                </div>
-            </div>
-        );
+  const handleAddUser = async () => {
+    if (!newUserUsername) {
+      toast.error('Please enter a username');
+      return;
     }
 
     if (!canManageUsers) {
-        return (
-            <div className="text-center py-20">
-                <Shield className="h-16 w-16 text-[#b8a89a] mx-auto mb-4" />
-                <p className="text-lg font-medium text-[#2c1810]">Access Denied</p>
-                <p className="text-sm text-[#8a7a6a] mt-1">You do not have permission to manage users.</p>
-            </div>
-        );
+      toast.error('You do not have permission to add users.');
+      return;
     }
 
+    setAddingUser(true);
+    try {
+      const user = await checkUserExists(newUserUsername);
+
+      if (!user) {
+        setAddingUser(false);
+        return;
+      }
+
+      const { data: existing } = await supabase
+        .from('dashboard_access')
+        .select('id')
+        .eq('user_id', user.user_id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error('User already has dashboard access.');
+        setAddingUser(false);
+        return;
+      }
+
+      const role = newUserRole;
+      const canManageProjects = true;
+      const canManageMessages = true;
+      const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
+      const canManageUsers = role === 'owner';
+
+      const { error } = await supabase
+        .from('dashboard_access')
+        .insert({
+          user_id: user.user_id,
+          role: role,
+          can_manage_projects: canManageProjects,
+          can_manage_messages: canManageMessages,
+          can_manage_settings: canManageSettings,
+          can_manage_users: canManageUsers,
+        });
+
+      if (error) throw error;
+
+      toast.success('User added successfully');
+      setNewUserUsername('');
+      setNewUserRole('editor');
+      setFoundUser(null);
+      setShowAddModal(false);
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error adding user:', error);
+      toast.error('Failed to add user');
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const handleRemoveUser = async (userId: string, userName: string) => {
+    if (!canManageUsers) {
+      toast.error('You do not have permission to remove users.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to remove ${userName}?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('dashboard_access')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast.success('User removed successfully');
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error removing user:', error);
+      toast.error('Failed to remove user');
+    }
+  };
+
+  const startEditingRole = (userId: string, currentRole: string) => {
+    if (!canManageUsers) {
+      toast.error('You do not have permission to change roles.');
+      return;
+    }
+    setEditingRole(userId);
+    setTempRole(currentRole as any);
+  };
+
+  const cancelEditingRole = () => {
+    setEditingRole(null);
+    setTempRole('editor');
+  };
+
+  const saveRole = async (userId: string) => {
+    if (!canManageUsers) {
+      toast.error('You do not have permission to change roles.');
+      return;
+    }
+
+    try {
+      const role = tempRole;
+      const canManageProjects = true;
+      const canManageMessages = true;
+      const canManageSettings = role === 'owner' || role === 'admin' || role === 'editor';
+      const canManageUsers = role === 'owner';
+
+      const { error } = await supabase
+        .from('dashboard_access')
+        .update({
+          role: role,
+          can_manage_projects: canManageProjects,
+          can_manage_messages: canManageMessages,
+          can_manage_settings: canManageSettings,
+          can_manage_users: canManageUsers,
+        })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast.success('Role updated successfully');
+      setEditingRole(null);
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error saving role:', error);
+      toast.error('Failed to update role');
+    }
+  };
+
+  if (checkingPermission || loading) {
     return (
-        <>
-            <Toaster position="top-right" />
-            <div className="space-y-8">
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#2c1810]">User Management</h1>
-                        <p className="text-[#8a7a6a] mt-1">
-                            Manage who has access to the dashboard
-                        </p>
-                    </div>
-                    {canManageUsers && (
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300"
-                        >
-                            <UserPlus className="h-4 w-4" />
-                            Add User
-                        </button>
-                    )}
-                </motion.div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-[#d4c5b0] animate-spin mx-auto" />
+          <p className="text-[#8a7a6a] mt-4">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
-                {users.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="bg-[#f8f4f0] border border-[#f0ebe6] p-12 text-center"
-                    >
-                        <Users className="h-12 w-12 text-[#b8a89a] mx-auto mb-4" />
-                        <p className="text-[#8a7a6a]">No users have dashboard access yet.</p>
-                        {canManageUsers && (
+  if (!canManageUsers) {
+    return (
+      <div className="text-center py-20">
+        <Shield className="h-16 w-16 text-[#b8a89a] mx-auto mb-4" />
+        <p className="text-lg font-medium text-[#2c1810]">Access Denied</p>
+        <p className="text-sm text-[#8a7a6a] mt-1">You do not have permission to manage users.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Toaster position="top-right" />
+      <div className="space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-bold text-[#2c1810]">User Management</h1>
+            <p className="text-[#8a7a6a] mt-1">Manage who has access to the dashboard</p>
+          </div>
+          {canManageUsers && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add User
+            </button>
+          )}
+        </motion.div>
+
+        {users.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-[#f8f4f0] border border-[#f0ebe6] p-12 text-center"
+          >
+            <Users className="h-12 w-12 text-[#b8a89a] mx-auto mb-4" />
+            <p className="text-[#8a7a6a]">No users have dashboard access yet.</p>
+            {canManageUsers && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="mt-4 bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300"
+              >
+                Add Your First User
+              </button>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-white border border-[#f0ebe6] overflow-hidden"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#f8f4f0] border-b border-[#f0ebe6]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Permissions</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0ebe6]">
+                  {users.map((user, index) => {
+                    const roleInfo = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+                    const displayName = user.display_name || user.username || 'User';
+                    const initial = displayName.charAt(0).toUpperCase() || 'U';
+                    const pfpUrl = user.pfp_url || null;
+                    const isEditing = editingRole === user.user_id;
+                    const isCurrentUser = user.user_id === currentUserId;
+
+                    return (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="hover:bg-[#f8f4f0] transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-10 w-10 rounded-full overflow-hidden bg-[#d4c5b0] flex items-center justify-center">
+                              {pfpUrl ? (
+                                <Image src={pfpUrl} alt={displayName} fill className="object-cover" />
+                              ) : (
+                                <span className="text-sm font-bold text-[#2c1810]">{initial}</span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-[#2c1810] flex items-center gap-1.5">
+                                {displayName}
+                                {isCurrentUser && <span className="text-xs text-[#8a7a6a] ml-1">(you)</span>}
+                              </p>
+                              <p className="text-xs text-[#b8a89a]">@{user.username || 'user'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={tempRole}
+                                onChange={(e) => setTempRole(e.target.value as any)}
+                                className="px-2 py-1 border border-[#f0ebe6] text-sm focus:outline-none focus:border-[#d4c5b0] bg-white text-[#2c1810]"
+                                autoFocus
+                              >
+                                {ROLES.map((role) => (
+                                  <option key={role} value={role}>
+                                    {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => saveRole(user.user_id)}
+                                className="p-1 text-green-600 hover:bg-green-50 transition-colors"
+                                title="Save role"
+                              >
+                                <Save className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={cancelEditingRole}
+                                className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
+                                title="Cancel"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-3 py-1 text-xs font-medium ${roleInfo.color}`}>
+                                {roleInfo.label}
+                              </span>
+                              {canManageUsers && (
+                                <button
+                                  onClick={() => startEditingRole(user.user_id, user.role)}
+                                  className="p-1 text-[#8a7a6a] hover:text-[#2c1810] hover:bg-[#f8f4f0] transition-colors"
+                                  title="Edit role"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {user.can_manage_projects && (
+                              <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Projects</span>
+                            )}
+                            {user.can_manage_messages && (
+                              <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Messages</span>
+                            )}
+                            {user.can_manage_settings && (
+                              <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Settings</span>
+                            )}
+                            {user.can_manage_users && (
+                              <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Users</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {canManageUsers && !isCurrentUser && (
                             <button
-                                onClick={() => setShowAddModal(true)}
-                                className="mt-4 bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300"
+                              onClick={() => handleRemoveUser(user.user_id, displayName)}
+                              className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
+                              title="Remove user"
                             >
-                                Add Your First User
+                              <Trash2 className="h-4 w-4" />
                             </button>
-                        )}
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="bg-white border border-[#f0ebe6] overflow-hidden"
-                    >
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-[#f8f4f0] border-b border-[#f0ebe6]">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">User</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Role</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Permissions</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#f0ebe6]">
-                                {users.map((user, index) => {
-                                    const roleInfo = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
-                                    const displayName = user.display_name || user.username || 'User';
-                                    const initial = displayName.charAt(0).toUpperCase() || 'U';
-                                    const isEditing = editingRole === user.user_id;
-                                    const isCurrentUser = user.user_id === currentUserId;
+                          )}
+                          {isCurrentUser && (
+                            <span className="text-xs text-[#b8a89a]">Cannot remove yourself</span>
+                          )}
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
 
-                                    return (
-                                        <motion.tr
-                                            key={user.id}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                                            className="hover:bg-[#f8f4f0] transition-colors"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 bg-[#2c1810] flex items-center justify-center text-white font-medium text-sm">
-                                                        {initial}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-[#2c1810] flex items-center gap-1.5">
-                                                            {displayName}
-                                                            {isCurrentUser && (
-                                                                <span className="text-xs text-[#8a7a6a] ml-1">(you)</span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-xs text-[#b8a89a]">
-                                                            @{user.username || 'user'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {isEditing ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <select
-                                                            value={tempRole}
-                                                            onChange={(e) => setTempRole(e.target.value as any)}
-                                                            className="px-2 py-1 border border-[#f0ebe6] text-sm focus:outline-none focus:border-[#d4c5b0] bg-white text-[#2c1810]"
-                                                            autoFocus
-                                                        >
-                                                            {ROLES.map((role) => (
-                                                                <option key={role} value={role}>
-                                                                    {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        <button
-                                                            onClick={() => saveRole(user.user_id)}
-                                                            className="p-1 text-green-600 hover:bg-green-50 transition-colors"
-                                                            title="Save role"
-                                                        >
-                                                            <Save className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={cancelEditingRole}
-                                                            className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
-                                                            title="Cancel"
-                                                        >
-                                                            <XCircle className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2">
-                                                            <span className={`inline-flex items-center px-3 py-1 text-xs font-medium ${roleInfo.color}`}>
-                                                                {roleInfo.label}
-                                                            </span>
-                                                        {canManageUsers && (
-                                                            <button
-                                                                onClick={() => startEditingRole(user.user_id, user.role)}
-                                                                className="p-1 text-[#8a7a6a] hover:text-[#2c1810] hover:bg-[#f8f4f0] transition-colors"
-                                                                title="Edit role"
-                                                            >
-                                                                <Edit2 className="h-3.5 w-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {user.can_manage_projects && (
-                                                        <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Projects</span>
-                                                    )}
-                                                    {user.can_manage_messages && (
-                                                        <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Messages</span>
-                                                    )}
-                                                    {user.can_manage_settings && (
-                                                        <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Settings</span>
-                                                    )}
-                                                    {user.can_manage_users && (
-                                                        <span className="px-2 py-0.5 bg-[#f8f4f0] text-[#2c1810] text-xs">Users</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                {canManageUsers && !isCurrentUser && (
-                                                    <button
-                                                        onClick={() => handleRemoveUser(user.user_id, displayName)}
-                                                        className="p-1 text-[#c0392b] hover:bg-red-50 transition-colors"
-                                                        title="Remove user"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                                {isCurrentUser && (
-                                                    <span className="text-xs text-[#b8a89a]">Cannot remove yourself</span>
-                                                )}
-                                            </td>
-                                        </motion.tr>
-                                    );
-                                })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
-                )}
+        {users.length > 0 && (
+          <div className="text-center text-sm text-[#b8a89a]">
+            Total users: <span className="font-medium text-[#2c1810]">{users.length}</span>
+          </div>
+        )}
+      </div>
 
-                {users.length > 0 && (
-                    <div className="text-center text-sm text-[#b8a89a]">
-                        Total users: <span className="font-medium text-[#2c1810]">{users.length}</span>
-                    </div>
-                )}
+      {/* Add User Modal */}
+      {showAddModal && canManageUsers && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white w-full max-w-md p-8"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-[#2c1810]">Add User</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-[#b8a89a] hover:text-[#2c1810] transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            {/* Add User Modal */}
-            {showAddModal && canManageUsers && (
-                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-white w-full max-w-md p-8"
-                    >
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-[#2c1810]">Add User</h2>
-                            <button
-                                onClick={() => setShowAddModal(false)}
-                                className="text-[#b8a89a] hover:text-[#2c1810] transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
-                                    Username
-                                </label>
-                                <div className="relative">
-                                    <User className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
-                                    <input
-                                        type="text"
-                                        value={newUserUsername}
-                                        onChange={(e) => setNewUserUsername(e.target.value)}
-                                        className="w-full pl-6 pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors placeholder:text-[#b8a89a]"
-                                        placeholder="@username"
-                                    />
-                                </div>
-                                {searchingUser && (
-                                    <div className="mt-2 text-sm text-[#8a7a6a]">Searching for user...</div>
-                                )}
-                                {foundUser && (
-                                    <div className="mt-2 text-sm text-green-600">
-                                        User found: {foundUser.display_name || foundUser.username}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
-                                    Role
-                                </label>
-                                <select
-                                    value={newUserRole}
-                                    onChange={(e) => setNewUserRole(e.target.value as any)}
-                                    className="w-full pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors"
-                                >
-                                    {ROLES.map((role) => (
-                                        <option key={role} value={role}>
-                                            {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <button
-                                    onClick={handleAddUser}
-                                    disabled={addingUser || searchingUser}
-                                    className="flex-1 bg-[#2c1810] hover:bg-[#3d2820] text-white py-2.5 text-sm font-medium transition-all duration-300 disabled:opacity-50"
-                                >
-                                    {addingUser ? 'Adding...' : 'Add User'}
-                                </button>
-                                <button
-                                    onClick={() => setShowAddModal(false)}
-                                    className="flex-1 border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] py-2.5 text-sm font-medium transition-all duration-300"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
+                  Username
+                </label>
+                <div className="relative">
+                  <User className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b8a89a]" />
+                  <input
+                    type="text"
+                    value={newUserUsername}
+                    onChange={(e) => setNewUserUsername(e.target.value)}
+                    className="w-full pl-6 pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors placeholder:text-[#b8a89a]"
+                    placeholder="@username"
+                  />
                 </div>
-            )}
-        </>
-    );
+                {searchingUser && (
+                  <div className="mt-2 text-sm text-[#8a7a6a]">Searching for user...</div>
+                )}
+                {foundUser && (
+                  <div className="mt-2 text-sm text-green-600">
+                    User found: {foundUser.display_name || foundUser.username}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
+                  Role
+                </label>
+                <select
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as any)}
+                  className="w-full pb-2 bg-transparent border-b border-[#f0ebe6] text-[#2c1810] focus:border-[#d4c5b0] focus:outline-none transition-colors"
+                >
+                  {ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={handleAddUser}
+                  disabled={addingUser || searchingUser}
+                  className="flex-1 bg-[#2c1810] hover:bg-[#3d2820] text-white py-2.5 text-sm font-medium transition-all duration-300 disabled:opacity-50"
+                >
+                  {addingUser ? 'Adding...' : 'Add User'}
+                </button>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] py-2.5 text-sm font-medium transition-all duration-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
 }
