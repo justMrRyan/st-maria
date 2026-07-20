@@ -4,6 +4,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FolderOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 
 interface Project {
     id: string;
@@ -14,10 +16,6 @@ interface Project {
     date: string;
 }
 
-interface PortfolioSectionProps {
-    projects: Project[];
-}
-
 function getImageUrl(images: any[]): string | null {
     if (!images || images.length === 0) return null;
     const firstImage = images[0];
@@ -26,9 +24,57 @@ function getImageUrl(images: any[]): string | null {
     return null;
 }
 
-export function PortfolioSection({ projects }: PortfolioSectionProps) {
-    // Show ALL projects – no slice
-    if (projects.length === 0) return null;
+export function PortfolioSection() {
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchProjects();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            // Fetch ALL projects from the database - no user_id filter
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching projects:', error);
+                return;
+            }
+
+            setProjects(data || []);
+        } catch (error) {
+            console.error('Error in fetchProjects:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <section id="portfolio" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#faf8f6]">
+                <div className="max-w-7xl mx-auto text-center">
+                    <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent rounded-full mx-auto" />
+                    <p className="text-[#8a7a6a] mt-4">Loading projects...</p>
+                </div>
+            </section>
+        );
+    }
+
+    if (projects.length === 0) {
+        return (
+            <section id="portfolio" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#faf8f6]">
+                <div className="max-w-7xl mx-auto text-center">
+                    <FolderOpen className="h-16 w-16 text-[#b8a89a] mx-auto mb-4" />
+                    <p className="text-lg font-medium text-[#2c1810]">No projects yet</p>
+                    <p className="text-sm text-[#8a7a6a] mt-1">Check back soon for new projects.</p>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section id="portfolio" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#faf8f6]">
@@ -88,7 +134,6 @@ export function PortfolioSection({ projects }: PortfolioSectionProps) {
                     })}
                 </div>
 
-                {/* Show "View All Projects" if there are more than 9, or always if you want */}
                 {projects.length > 9 && (
                     <div className="text-center mt-12">
                         <Link href="/projects">
