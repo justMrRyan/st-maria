@@ -15,15 +15,21 @@ export function HeroSection() {
   useEffect(() => {
     const fetchLatestProjectImages = async () => {
       try {
-        // Fetch the most recent project by date
+        console.log('📸 Fetching latest project...');
         const { data, error } = await supabase
-          .from('projects')
+          .from('projects')          // <-- make sure this is your exact table name
           .select('images')
           .order('date', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Supabase error:', error);
+          setLoading(false);
+          return;
+        }
+
+        console.log('📦 Project data:', data);
 
         if (data && data.images) {
           let imageArray = data.images;
@@ -32,11 +38,16 @@ export function HeroSection() {
           }
           if (Array.isArray(imageArray) && imageArray.length > 0) {
             const urls = imageArray.map((img: any) => typeof img === 'string' ? img : img.url).filter(Boolean);
+            console.log('🖼️ Images found:', urls);
             setImages(urls);
+          } else {
+            console.warn('⚠️ No images in the latest project.');
           }
+        } else {
+          console.warn('⚠️ No project found or images column is empty.');
         }
-      } catch (error) {
-        console.error('Error fetching latest project images:', error);
+      } catch (err) {
+        console.error('💥 Unexpected error:', err);
       } finally {
         setLoading(false);
       }
@@ -97,7 +108,6 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/90 via-[#2c1810]/40 to-transparent" />
       </div>
 
-      {/* Slideshow indicators */}
       {!loading && images.length > 1 && (
         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 flex gap-2">
           {images.map((_, index) => (

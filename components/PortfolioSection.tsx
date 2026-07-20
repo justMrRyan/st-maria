@@ -27,8 +27,7 @@ function getImageUrl(images: any[]): string | null {
 }
 
 export function PortfolioSection({ projects }: PortfolioSectionProps) {
-    const displayProjects = projects.slice(0, 9);
-
+    // Show ALL projects – no slice
     if (projects.length === 0) return null;
 
     return (
@@ -51,7 +50,7 @@ export function PortfolioSection({ projects }: PortfolioSectionProps) {
                 </motion.div>
 
                 <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-                    {displayProjects.map((project, index) => {
+                    {projects.map((project, index) => {
                         const imageUrl = getImageUrl(project.images);
                         return (
                             <Link href={`/projects/${project.id}`} key={project.id}>
@@ -89,6 +88,7 @@ export function PortfolioSection({ projects }: PortfolioSectionProps) {
                     })}
                 </div>
 
+                {/* Show "View All Projects" if there are more than 9, or always if you want */}
                 {projects.length > 9 && (
                     <div className="text-center mt-12">
                         <Link href="/projects">
