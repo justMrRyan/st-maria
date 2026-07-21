@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function HeroSection() {
   const [images, setImages] = useState<string[]>([]);
@@ -15,21 +16,18 @@ export function HeroSection() {
   useEffect(() => {
     const fetchLatestProjectImages = async () => {
       try {
-        console.log('📸 Fetching latest project...');
         const { data, error } = await supabase
-          .from('projects')          // <-- make sure this is your exact table name
+          .from('projects')
           .select('images')
           .order('date', { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (error) {
-          console.error('❌ Supabase error:', error);
+          console.error('Supabase error:', error);
           setLoading(false);
           return;
         }
-
-        console.log('📦 Project data:', data);
 
         if (data && data.images) {
           let imageArray = data.images;
@@ -38,16 +36,11 @@ export function HeroSection() {
           }
           if (Array.isArray(imageArray) && imageArray.length > 0) {
             const urls = imageArray.map((img: any) => typeof img === 'string' ? img : img.url).filter(Boolean);
-            console.log('🖼️ Images found:', urls);
             setImages(urls);
-          } else {
-            console.warn('⚠️ No images in the latest project.');
           }
-        } else {
-          console.warn('⚠️ No project found or images column is empty.');
         }
       } catch (err) {
-        console.error('💥 Unexpected error:', err);
+        console.error('Unexpected error:', err);
       } finally {
         setLoading(false);
       }
@@ -56,7 +49,6 @@ export function HeroSection() {
     fetchLatestProjectImages();
   }, []);
 
-  // Auto‑slideshow
   useEffect(() => {
     if (images.length <= 1) return;
     const interval = setInterval(() => {
@@ -65,12 +57,38 @@ export function HeroSection() {
     return () => clearInterval(interval);
   }, [images]);
 
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
   const scrollToContact = () => {
     const contactSection = document.querySelector('#contact');
     if (contactSection) contactSection.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fallbackImage = '/images/hero-interior.jpg';
+
+  // Sliding dot window logic
+  const totalImages = images.length;
+  const maxVisibleDots = 5;
+
+  // Compute the start index of the visible window
+  let start = 0;
+  if (totalImages > maxVisibleDots) {
+    const half = Math.floor(maxVisibleDots / 2);
+    start = Math.max(0, Math.min(currentIndex - half, totalImages - maxVisibleDots));
+  }
+  const visibleIndices = Array.from(
+    { length: Math.min(maxVisibleDots, totalImages) },
+    (_, i) => start + i
+  );
+
+  const hasMoreBefore = start > 0;
+  const hasMoreAfter = start + maxVisibleDots < totalImages;
 
   return (
     <section id="hero" className="relative min-h-[90vh] flex items-end overflow-hidden">
@@ -108,17 +126,49 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/90 via-[#2c1810]/40 to-transparent" />
       </div>
 
+      {/* Slideshow indicator with sliding dots + arrows */}
       {!loading && images.length > 1 && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {images.map((_, index) => (
+        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center px-4">
+          <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-full px-3 py-2 sm:px-4 sm:py-2.5">
+            {/* Previous button */}
             <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                index === currentIndex ? 'w-8 bg-[#d4c5b0]' : 'w-4 bg-white/50 hover:bg-white/80'
-              }`}
-            />
-          ))}
+              onClick={goToPrevious}
+              className="text-white/70 hover:text-white transition-colors p-1"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+
+            {/* Dots */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {hasMoreBefore && (
+                <span className="text-white/50 text-xs">…</span>
+              )}
+              {visibleIndices.map((index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                    index === currentIndex
+                      ? 'w-6 sm:w-8 bg-[#d4c5b0]'
+                      : 'w-4 sm:w-5 bg-white/50 hover:bg-white/80'
+                  }`}
+                />
+              ))}
+              {hasMoreAfter && (
+                <span className="text-white/50 text-xs">…</span>
+              )}
+            </div>
+
+            {/* Next button */}
+            <button
+              onClick={goToNext}
+              className="text-white/70 hover:text-white transition-colors p-1"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
         </div>
       )}
 

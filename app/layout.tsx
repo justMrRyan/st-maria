@@ -53,20 +53,19 @@ export const metadata: Metadata = {
 
 
 export default function RootLayout({
-                                       children,
-                                   }: {
-    children: React.ReactNode;
+  children,
+}: {
+  children: React.ReactNode;
 }) {
-    return (
-        <html lang="en" suppressHydrationWarning>
-        <body className="bg-[#faf8f6]" suppressHydrationWarning>
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-[#faf8f6] overflow-x-hidden" suppressHydrationWarning>
         <Navbar />
-        <main className="pt-20">
-            {children}
+        <main className="pt-20 overflow-x-hidden max-w-full">
+          {children}
         </main>
-        {/* Footer */}
         <Footer />
-        </body>
-        </html>
-    );
+      </body>
+    </html>
+  );
 }
