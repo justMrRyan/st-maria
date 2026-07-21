@@ -3,11 +3,9 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-
-/* ─── Prevent horizontal overflow ─── */
+/* ─── Prevent horizontal overflow (mobile-friendly) ─── */
 * {
   box-sizing: border-box;
-  max-width: 100%;
 }
 
 html,
@@ -18,6 +16,7 @@ body {
   padding: 0;
 }
 
+/* Only constrain media elements – not all elements */
 img,
 video,
 svg {
@@ -33,7 +32,6 @@ svg {
   overflow: hidden;
 }
 /* ────────────────────────────────── */
-
 
 @custom-variant dark (&:is(.dark *));
 

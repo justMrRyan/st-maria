@@ -5,21 +5,21 @@ import { useState, useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/server';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
   FolderOpen,
   Sparkles,
   Heart,
-  Share2,
   ZoomIn,
   ChevronLeft,
   ChevronRight,
   X,
   Play,
-  Pause
+  Pause,
+  Grid,
+  LayoutGrid
 } from 'lucide-react';
 
 interface Project {
@@ -38,7 +38,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const router = useRouter();
+  const [showGallery, setShowGallery] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -46,10 +46,10 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
       const supabase = getSupabaseClient();
 
       const { data: projectData, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', id)
-          .single();
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .single();
 
       if (error || !projectData) {
         notFound();
@@ -108,9 +108,9 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
     document.body.style.overflow = 'auto';
   };
 
-  // Sliding dot window logic
+  // Sliding dot window
   const totalImages = imageUrls.length;
-  const maxVisibleDots = 5;
+  const maxVisibleDots = 7;
   let start = 0;
   if (totalImages > maxVisibleDots) {
     const half = Math.floor(maxVisibleDots / 2);
@@ -136,218 +136,196 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
 
   if (!project) return null;
 
-  const featuredImage = imageUrls[0] || null;
-  const galleryImages = imageUrls.slice(1) || [];
-
   return (
     <>
       <main className="min-h-screen bg-[#faf8f6]">
-        {/* ─── HERO WITH SLIDESHOW ────────────────────────────── */}
-        <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2c1810]/5 via-[#faf8f6] to-[#f0ebe6]" />
-          <div className="absolute top-20 right-20 w-64 h-64 bg-[#d4c5b0]/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-[#e8ddd0]/20 rounded-full blur-3xl" />
+        {/* ─── FULL-SCREEN HERO SLIDESHOW ────────────────────── */}
+        <section className="relative h-screen w-full overflow-hidden">
+          {imageUrls.length > 0 ? (
+            <>
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <Image
+                  src={imageUrls[currentImageIndex]}
+                  alt={project.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="100vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/70 via-[#2c1810]/20 to-transparent" />
+              </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left Content – unchanged */}
-              <div className="space-y-8">
-                <div className="flex flex-wrap items-center gap-3">
-                  {project.category && (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#2c1810] text-white text-sm font-medium tracking-wide">
-                      <Sparkles className="h-4 w-4" />
-                      {project.category}
-                    </span>
+              {/* Overlay Content */}
+              <div className="absolute inset-0 flex flex-col justify-end pb-20 px-4 sm:px-8 lg:px-16">
+                <div className="max-w-4xl">
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    {project.category && (
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium tracking-wide border border-white/10">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {project.category}
+                      </span>
+                    )}
+                    {project.date && (
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white/80 text-xs font-medium border border-white/10">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(project.date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                        })}
+                      </span>
+                    )}
+                  </div>
+
+                  <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight mb-4">
+                    {project.title}
+                  </h1>
+
+                  {project.description && (
+                    <p className="text-base sm:text-lg text-white/80 max-w-2xl leading-relaxed mb-6">
+                      {project.description}
+                    </p>
                   )}
-                  {project.date && (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#f0ebe6] text-[#8a7a6a] text-sm font-medium">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(project.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                      })}
-                    </span>
-                  )}
-                </div>
 
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="text-[#2c1810]">{project.title}</span>
-                </h1>
-
-                {project.description && (
-                  <p className="text-lg sm:text-xl text-[#8a7a6a] leading-relaxed max-w-lg">
-                    {project.description}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Link href="/contact">
-                    <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white gap-2 px-8 py-4 text-base transition-all duration-300 flex items-center">
-                      <Heart className="h-5 w-5" />
-                      Inquire About This Project
-                    </button>
-                  </Link>
-                  <Link href="/projects">
-                    <button className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] hover:border-[#b8a89a] px-8 py-4 text-base flex items-center">
-                      <ArrowLeft className="h-5 w-5 mr-2" />
-                      Back
-                    </button>
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    <Link href="/contact">
+                      <button className="bg-white text-[#2c1810] hover:bg-gray-100 px-6 py-3 text-sm font-medium transition-all duration-300 flex items-center gap-2">
+                        <Heart className="h-4 w-4" />
+                        Inquire
+                      </button>
+                    </Link>
+                    <Link href="/projects">
+                      <button className="border border-white/30 text-white hover:bg-white/10 px-6 py-3 text-sm font-medium transition-all duration-300 flex items-center gap-2">
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </button>
+                    </Link>
+                    {imageUrls.length > 1 && (
+                      <button
+                        onClick={() => setShowGallery(!showGallery)}
+                        className="border border-white/30 text-white hover:bg-white/10 px-6 py-3 text-sm font-medium transition-all duration-300 flex items-center gap-2"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                        {showGallery ? 'Hide Gallery' : 'View All'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Right Content - Slideshow – UPDATED with sliding dots */}
-              <div className="relative">
-                {imageUrls.length > 0 ? (
-                  <div className="relative aspect-[4/3] bg-[#f8f4f0] overflow-hidden group">
-                    {/* Main Image – unchanged */}
-                    <div
-                      className="relative w-full h-full cursor-pointer"
-                      onClick={() => openLightbox(currentImageIndex)}
+              {/* Slideshow Controls */}
+              {imageUrls.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-3 py-2 sm:px-4 sm:py-2.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                      aria-label="Previous"
                     >
-                      <Image
-                        src={imageUrls[currentImageIndex]}
-                        alt={project.title}
-                        fill
-                        className="object-cover transition-transform duration-1000"
-                        priority
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/20 via-transparent to-transparent" />
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-1 sm:gap-1.5 mx-1">
+                      {hasMoreBefore && (
+                        <span className="text-white/50 text-xs">…</span>
+                      )}
+                      {visibleIndices.map((index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(index); }}
+                          className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                            index === currentImageIndex
+                              ? 'w-6 sm:w-8 bg-white'
+                              : 'w-2 sm:w-3 bg-white/40 hover:bg-white/70'
+                          }`}
+                        />
+                      ))}
+                      {hasMoreAfter && (
+                        <span className="text-white/50 text-xs">…</span>
+                      )}
                     </div>
 
-                    {/* Image Navigation Arrows (on image) – kept as before */}
-                    {imageUrls.length > 1 && (
-                      <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#2c1810] p-2 transition-all duration-300 opacity-0 group-hover:opacity-100"
-                        >
-                          <ChevronLeft className="h-6 w-6" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#2c1810] p-2 transition-all duration-300 opacity-0 group-hover:opacity-100"
-                        >
-                          <ChevronRight className="h-6 w-6" />
-                        </button>
-                      </>
-                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                      aria-label="Next"
+                    >
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
 
-                    {/* ─── NEW SLIDING DOT INDICATOR + CONTROLS ─── */}
-                    {imageUrls.length > 1 && (
-                      <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center px-4">
-                        <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1.5 sm:px-3 sm:py-2">
-                          {/* Left arrow */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-                            className="text-white/70 hover:text-white transition-colors p-0.5 sm:p-1"
-                            aria-label="Previous"
-                          >
-                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </button>
+                    <div className="w-px h-5 bg-white/20 mx-1" />
 
-                          {/* Dots with ellipsis */}
-                          <div className="flex items-center gap-1 sm:gap-1.5 mx-1">
-                            {hasMoreBefore && (
-                              <span className="text-white/50 text-xs">…</span>
-                            )}
-                            {visibleIndices.map((index) => (
-                              <button
-                                key={index}
-                                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(index); }}
-                                className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                                  index === currentImageIndex
-                                    ? 'w-5 sm:w-7 bg-[#d4c5b0]'
-                                    : 'w-3 sm:w-4 bg-white/50 hover:bg-white/80'
-                                }`}
-                              />
-                            ))}
-                            {hasMoreAfter && (
-                              <span className="text-white/50 text-xs">…</span>
-                            )}
-                          </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setIsAutoPlaying(!isAutoPlaying); }}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                    >
+                      {isAutoPlaying ? <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                    </button>
 
-                          {/* Right arrow */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                            className="text-white/70 hover:text-white transition-colors p-0.5 sm:p-1"
-                            aria-label="Next"
-                          >
-                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                          </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openLightbox(currentImageIndex); }}
+                      className="text-white/70 hover:text-white transition-colors p-1"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
 
-                          {/* Separator */}
-                          <div className="w-px h-5 bg-white/20 mx-1" />
-
-                          {/* Play/Pause */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setIsAutoPlaying(!isAutoPlaying); }}
-                            className="text-white/70 hover:text-white transition-colors p-0.5 sm:p-1"
-                          >
-                            {isAutoPlaying ? <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                          </button>
-
-                          {/* Zoom */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openLightbox(currentImageIndex); }}
-                            className="text-white/70 hover:text-white transition-colors p-0.5 sm:p-1"
-                          >
-                            <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          </button>
-
-                          {/* Counter */}
-                          <span className="text-white/70 text-xs sm:text-sm ml-1">
-                            {currentImageIndex + 1}/{imageUrls.length}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <span className="text-white/70 text-xs sm:text-sm ml-1 min-w-[40px] text-center">
+                      {currentImageIndex + 1}/{imageUrls.length}
+                    </span>
                   </div>
-                ) : (
-                  <div className="aspect-[4/3] bg-[#f0ebe6] flex items-center justify-center">
-                    <Sparkles className="h-16 w-16 text-[#b8a89a]" />
-                  </div>
-                )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="w-full h-full bg-[#f0ebe6] flex items-center justify-center">
+              <div className="text-center">
+                <FolderOpen className="h-20 w-20 text-[#b8a89a] mx-auto mb-4" />
+                <p className="text-[#8a7a6a]">No images available</p>
               </div>
             </div>
-          </div>
+          )}
         </section>
 
-        {/* ─── GALLERY GRID ────────────────────────────────────── */}
-        {/* (unchanged – keep as is) */}
-        {galleryImages.length > 0 && (
-          <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        {/* ─── THUMBNAIL GALLERY (conditionally shown) ────────── */}
+        {showGallery && imageUrls.length > 1 && (
+          <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white border-t border-[#f0ebe6]">
             <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl sm:text-4xl font-bold text-[#2c1810] mb-4">
-                  Project Gallery
-                </h2>
-                <p className="text-[#8a7a6a] max-w-2xl mx-auto">
-                  Explore the details and craftsmanship behind this beautiful space
-                </p>
-                <div className="w-20 h-1 bg-[#d4c5b0] mx-auto mt-4" />
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold text-[#2c1810]">All Images</h2>
+                <button
+                  onClick={() => setShowGallery(false)}
+                  className="text-sm text-[#8a7a6a] hover:text-[#2c1810] transition-colors"
+                >
+                  Close
+                </button>
               </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {galleryImages.map((imageUrl: string, index: number) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {imageUrls.map((imageUrl, index) => (
                   <div
                     key={index}
-                    className="group relative overflow-hidden cursor-pointer bg-[#f8f4f0]"
-                    onClick={() => openLightbox(index + 1)}
+                    className={`relative aspect-square overflow-hidden cursor-pointer bg-[#f8f4f0] border-2 transition-all ${
+                      index === currentImageIndex ? 'border-[#2c1810]' : 'border-transparent hover:border-[#d4c5b0]'
+                    }`}
+                    onClick={() => {
+                      setCurrentImageIndex(index);
+                      setShowGallery(false);
+                      // Scroll to top to see the hero
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   >
-                    <div className="aspect-[4/3]">
-                      <Image
-                        src={imageUrl}
-                        alt={`${project.title} - Image ${index + 2}`}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                      />
+                    <Image
+                      src={imageUrl}
+                      alt={`${project.title} - ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                    />
+                    <div className="absolute inset-0 bg-[#2c1810]/0 hover:bg-[#2c1810]/20 transition-all duration-300 flex items-center justify-center">
+                      <ZoomIn className="h-6 w-6 text-white opacity-0 hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="absolute inset-0 bg-[#2c1810]/0 group-hover:bg-[#2c1810]/40 transition-all duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <ZoomIn className="h-8 w-8 text-white" />
-                    </div>
+                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-[#2c1810]/70 text-white text-[9px]">
+                      {index + 1}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -355,25 +333,24 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
           </section>
         )}
 
-        {/* ─── PROJECT DETAILS ────────────────────────────────── */}
-        {/* (unchanged) */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#faf8f6]">
+        {/* ─── MINIMAL PROJECT INFO ───────────────────────────── */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-[#faf8f6]">
           <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="bg-white p-6 border border-[#f0ebe6] text-center">
-                <div className="w-12 h-12 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-3">
-                  <FolderOpen className="h-6 w-6 text-[#2c1810]" />
+                <div className="w-10 h-10 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-2">
+                  <FolderOpen className="h-5 w-5 text-[#2c1810]" />
                 </div>
-                <h4 className="text-sm font-medium text-[#8a7a6a]">Category</h4>
-                <p className="text-lg font-bold text-[#2c1810] mt-1">{project.category || 'Interior Design'}</p>
+                <h4 className="text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Category</h4>
+                <p className="text-base font-medium text-[#2c1810] mt-1">{project.category || 'Interior Design'}</p>
               </div>
 
               <div className="bg-white p-6 border border-[#f0ebe6] text-center">
-                <div className="w-12 h-12 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="h-6 w-6 text-[#2c1810]" />
+                <div className="w-10 h-10 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-2">
+                  <Calendar className="h-5 w-5 text-[#2c1810]" />
                 </div>
-                <h4 className="text-sm font-medium text-[#8a7a6a]">Completed</h4>
-                <p className="text-lg font-bold text-[#2c1810] mt-1">
+                <h4 className="text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Completed</h4>
+                <p className="text-base font-medium text-[#2c1810] mt-1">
                   {project.date ? new Date(project.date).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
@@ -382,18 +359,18 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
               </div>
 
               <div className="bg-white p-6 border border-[#f0ebe6] text-center">
-                <div className="w-12 h-12 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="h-6 w-6 text-[#2c1810]" />
+                <div className="w-10 h-10 bg-[#f8f4f0] flex items-center justify-center mx-auto mb-2">
+                  <Sparkles className="h-5 w-5 text-[#2c1810]" />
                 </div>
-                <h4 className="text-sm font-medium text-[#8a7a6a]">Status</h4>
-                <p className="text-lg font-bold text-[#2c1810] mt-1">Completed</p>
+                <h4 className="text-xs font-medium text-[#8a7a6a] uppercase tracking-wider">Status</h4>
+                <p className="text-base font-medium text-[#2c1810] mt-1">Completed</p>
               </div>
             </div>
 
             {project.description && (
-              <div className="mt-12 bg-white p-8 border border-[#f0ebe6]">
-                <h3 className="text-xl font-bold text-[#2c1810] mb-4">About This Project</h3>
-                <p className="text-[#8a7a6a] leading-relaxed text-lg">
+              <div className="mt-8 bg-white p-8 border border-[#f0ebe6]">
+                <h3 className="text-lg font-bold text-[#2c1810] mb-3">About This Project</h3>
+                <p className="text-[#8a7a6a] leading-relaxed">
                   {project.description}
                 </p>
               </div>
@@ -401,47 +378,32 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
           </div>
         </section>
 
-        {/* ─── CTA ────────────────────────────────────────────── */}
-        {/* (unchanged) */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#2c1810] to-[#3d2820] p-12 text-center">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-
-              <div className="relative">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 mb-6">
-                  <Sparkles className="h-4 w-4 text-[#d4c5b0]" />
-                  <span className="text-sm font-medium text-[#d4c5b0]">Let's Create Together</span>
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  Inspired by This Design?
-                </h2>
-                <p className="text-[#d4c5b0] mb-8 max-w-2xl mx-auto">
-                  Let's discuss how I can bring your vision to life with the same attention to detail and elegance.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <Link href="/contact">
-                    <button className="bg-white text-[#2c1810] hover:bg-gray-100 px-8 py-4 text-base transition-all duration-300 flex items-center">
-                      Start Your Project
-                      <ArrowLeft className="h-5 w-5 ml-2" />
-                    </button>
-                  </Link>
-                  <Link href="/projects">
-                    <button className="border border-white/30 text-white hover:bg-white/10 px-8 py-4 text-base transition-all duration-300">
-                      Explore More Projects
-                    </button>
-                  </Link>
-                </div>
-              </div>
+        {/* ─── SIMPLE CTA ──────────────────────────────────────── */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white border-t border-[#f0ebe6]">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#2c1810] mb-3">
+              Inspired by This Design?
+            </h2>
+            <p className="text-[#8a7a6a] mb-6">
+              Let's discuss how I can bring your vision to life.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/contact">
+                <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-8 py-3 text-sm font-medium transition-all duration-300">
+                  Start Your Project
+                </button>
+              </Link>
+              <Link href="/projects">
+                <button className="border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] px-8 py-3 text-sm font-medium transition-all duration-300">
+                  View All Projects
+                </button>
+              </Link>
             </div>
           </div>
         </section>
       </main>
 
-      {/* ─── LIGHTBOX ────────────────────────────────────────────── */}
-      {/* (unchanged) */}
+      {/* ─── LIGHTBOX ──────────────────────────────────────────── */}
       {isLightboxOpen && imageUrls.length > 0 && (
         <div
           className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
@@ -449,7 +411,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
         >
           <button
             onClick={closeLightbox}
-            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-10"
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10"
           >
             <X className="w-8 h-8" />
           </button>
@@ -465,6 +427,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                 width={1200}
                 height={800}
                 className="w-full h-auto max-h-[80vh] object-contain"
+                priority
               />
             </div>
 
@@ -472,13 +435,13 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
               <>
                 <button
                   onClick={goToPrevious}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 transition-all duration-300"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 transition-all duration-300"
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </button>
                 <button
                   onClick={goToNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 transition-all duration-300"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 transition-all duration-300"
                 >
                   <ChevronRight className="h-8 w-8" />
                 </button>
@@ -497,12 +460,12 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                   {currentImageIndex + 1} / {imageUrls.length}
                 </span>
               </div>
-              <div className="flex gap-1.5 mt-3">
+              <div className="flex gap-1 mt-3 overflow-x-auto pb-1">
                 {imageUrls.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`h-1 transition-all duration-300 ${
+                    className={`h-1 transition-all duration-300 flex-shrink-0 ${
                       index === currentImageIndex
                         ? 'w-8 bg-[#d4c5b0]'
                         : 'w-4 bg-white/30 hover:bg-white/50'

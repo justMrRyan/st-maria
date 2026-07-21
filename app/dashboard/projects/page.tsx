@@ -1,10 +1,10 @@
-// app/dashboard/projects/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
+import { deleteImagesFromStorage } from '@/lib/supabase/storage'; // <-- IMPORT
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Eye, Calendar, FolderOpen, Sparkles } from 'lucide-react';
@@ -30,7 +30,6 @@ export default function DashboardProjects() {
 
     const fetchProjects = async () => {
         try {
-            // Fetch all projects (no user_id filter)
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
@@ -46,20 +45,41 @@ export default function DashboardProjects() {
         }
     };
 
-    const handleDelete = async (projectId: string) => {
-        if (!confirm('Are you sure you want to delete this project?')) return;
+    // Helper to extract all image URLs from the project's images array
+    const extractImageUrls = (images: any[]): string[] => {
+        if (!images || images.length === 0) return [];
+        return images
+            .map(img => {
+                if (typeof img === 'string') return img;
+                if (typeof img === 'object' && img.url) return img.url;
+                return null;
+            })
+            .filter((url): url is string => url !== null);
+    };
 
-        setDeleting(projectId);
+    const handleDelete = async (project: Project) => {
+        if (!confirm('Delete this project and all its images?')) return;
+
+        setDeleting(project.id);
         try {
+            // 1. Delete all images from storage
+            const imageUrls = extractImageUrls(project.images);
+            if (imageUrls.length > 0) {
+                await deleteImagesFromStorage(imageUrls);
+                // Even if some fail, we proceed with deleting the project
+                // The helper logs warnings, but we don't throw.
+            }
+
+            // 2. Delete the project from the database
             const { error } = await supabase
                 .from('projects')
                 .delete()
-                .eq('id', projectId);
+                .eq('id', project.id);
 
             if (error) throw error;
 
             toast.success('Project deleted successfully');
-            await fetchProjects();
+            await fetchProjects(); // Refresh list
         } catch (error) {
             console.error('Error deleting project:', error);
             toast.error('Failed to delete project');
@@ -221,7 +241,7 @@ export default function DashboardProjects() {
                                                 </button>
                                             </Link>
                                             <button
-                                                onClick={() => handleDelete(project.id)}
+                                                onClick={() => handleDelete(project)}
                                                 disabled={deleting === project.id}
                                                 className="flex-1 bg-[#c0392b] hover:bg-[#e74c3c] text-white px-3 py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-1"
                                             >

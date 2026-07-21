@@ -37,17 +37,17 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen overflow-x-hidden">
-      {/* Wrap each section to clip animation overflow */}
-      <div className="overflow-hidden">
+      {/* Each section is full‑width; its inner content is centered with the container */}
+      <div className="overflow-hidden w-full">
         <HeroSection />
       </div>
-      <div className="overflow-hidden">
+      <div className="overflow-hidden w-full">
         <AboutSection />
       </div>
-      <div className="overflow-hidden">
+      <div className="overflow-hidden w-full">
         <PortfolioSection projects={projects || []} />
       </div>
-      <div className="overflow-hidden">
+      <div className="overflow-hidden w-full">
         <ContactSection />
       </div>
     </main>
