@@ -1,7 +1,7 @@
 // app/projects/[id]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/server';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +18,6 @@ import {
   X,
   Play,
   Pause,
-  Grid,
   LayoutGrid
 } from 'lucide-react';
 
@@ -38,7 +37,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [showGallery, setShowGallery] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -108,6 +107,10 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
     document.body.style.overflow = 'auto';
   };
 
+  const scrollToGallery = () => {
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   // Sliding dot window
   const totalImages = imageUrls.length;
   const maxVisibleDots = 7;
@@ -143,7 +146,6 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
         <section className="relative h-screen w-full overflow-hidden">
           {imageUrls.length > 0 ? (
             <>
-              {/* Background Image */}
               <div className="absolute inset-0">
                 <Image
                   src={imageUrls[currentImageIndex]}
@@ -202,11 +204,11 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                     </Link>
                     {imageUrls.length > 1 && (
                       <button
-                        onClick={() => setShowGallery(!showGallery)}
+                        onClick={scrollToGallery}
                         className="border border-white/30 text-white hover:bg-white/10 px-6 py-3 text-sm font-medium transition-all duration-300 flex items-center gap-2"
                       >
                         <LayoutGrid className="h-4 w-4" />
-                        {showGallery ? 'Hide Gallery' : 'View All'}
+                        View All Images
                       </button>
                     )}
                   </div>
@@ -286,18 +288,13 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
           )}
         </section>
 
-        {/* ─── THUMBNAIL GALLERY (conditionally shown) ────────── */}
-        {showGallery && imageUrls.length > 1 && (
-          <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white border-t border-[#f0ebe6]">
+        {/* ─── THUMBNAIL GALLERY (ALWAYS VISIBLE) ────────────── */}
+        {imageUrls.length > 1 && (
+          <section ref={galleryRef} className="py-12 px-4 sm:px-6 lg:px-8 bg-white border-t border-[#f0ebe6]">
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold text-[#2c1810]">All Images</h2>
-                <button
-                  onClick={() => setShowGallery(false)}
-                  className="text-sm text-[#8a7a6a] hover:text-[#2c1810] transition-colors"
-                >
-                  Close
-                </button>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#2c1810]">All Images</h2>
+                <span className="text-sm text-[#8a7a6a]">{imageUrls.length} images</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {imageUrls.map((imageUrl, index) => (
@@ -308,8 +305,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                     }`}
                     onClick={() => {
                       setCurrentImageIndex(index);
-                      setShowGallery(false);
-                      // Scroll to top to see the hero
+                      // Scroll back to hero smoothly
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   >
@@ -320,7 +316,13 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                       className="object-cover"
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
                     />
-                    <div className="absolute inset-0 bg-[#2c1810]/0 hover:bg-[#2c1810]/20 transition-all duration-300 flex items-center justify-center">
+                    <div
+                      className="absolute inset-0 bg-[#2c1810]/0 hover:bg-[#2c1810]/20 transition-all duration-300 flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openLightbox(index);
+                      }}
+                    >
                       <ZoomIn className="h-6 w-6 text-white opacity-0 hover:opacity-100 transition-opacity" />
                     </div>
                     <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-[#2c1810]/70 text-white text-[9px]">
