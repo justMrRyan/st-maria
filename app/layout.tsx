@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-[#faf8f6] overflow-x-hidden" suppressHydrationWarning>
         <Navbar />
-        <main className="pt-20 min-h-screen">
+        <main className="min-h-screen">
           {children}
         </main>
         <Footer />

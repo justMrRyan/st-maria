@@ -233,9 +233,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
 
                     {/* Dots with ellipsis */}
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      {hasMoreBefore && (
-                        <span className="text-white/50 text-xs">…</span>
-                      )}
+                      
                       {visibleIndices.map((index) => (
                         <button
                           key={index}
@@ -247,9 +245,7 @@ export default function ProjectDetail({ params }: { params: Promise<{ id: string
                           }`}
                         />
                       ))}
-                      {hasMoreAfter && (
-                        <span className="text-white/50 text-xs">…</span>
-                      )}
+                      
                     </div>
 
                     {/* Next button */}

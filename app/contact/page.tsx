@@ -43,7 +43,7 @@ export default function ContactPage() {
         <>
             <main className="min-h-screen bg-[#faf8f6]">
                 {/* ─── HERO ────────────────────────────────────────────────── */}
-                <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f8f4f0] via-white to-[#f0ebe6] overflow-hidden">
+                <section className="relative pt-20 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f8f4f0] via-white to-[#f0ebe6] overflow-hidden">
                     <div className="absolute top-20 right-20 w-64 h-64 bg-[#d4c5b0]/20 rounded-full blur-3xl" />
                     <div className="absolute bottom-20 left-20 w-96 h-96 bg-[#e8ddd0]/20 rounded-full blur-3xl" />
 

@@ -125,8 +125,8 @@ export function Navbar() {
     return (
         <nav className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-            isScrolled || isDashboard
-                ? "bg-white/90 backdrop-blur-xl border-b border-[#f0ebe6] shadow-sm"
+            (isScrolled || isDashboard)
+                ? "bg-white/60 backdrop-blur-xl border-b border-[#f0ebe6] shadow-sm"   // <-- only change here: 90 → 60
                 : "bg-transparent"
         )}>
             <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4 lg:px-12">

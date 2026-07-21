@@ -91,7 +91,7 @@ export function HeroSection() {
   const hasMoreAfter = start + maxVisibleDots < totalImages;
 
   return (
-    <section id="hero" className="relative min-h-[90vh] flex items-end overflow-hidden">
+    <section id="hero" className="relative min-h-[100vh] flex items-end overflow-hidden">
       <div className="absolute inset-0">
         {!loading && images.length > 0 ? (
           <AnimatePresence mode="wait">
@@ -141,9 +141,6 @@ export function HeroSection() {
 
             {/* Dots */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {hasMoreBefore && (
-                <span className="text-white/50 text-xs">…</span>
-              )}
               {visibleIndices.map((index) => (
                 <button
                   key={index}
@@ -155,9 +152,6 @@ export function HeroSection() {
                   }`}
                 />
               ))}
-              {hasMoreAfter && (
-                <span className="text-white/50 text-xs">…</span>
-              )}
             </div>
 
             {/* Next button */}
