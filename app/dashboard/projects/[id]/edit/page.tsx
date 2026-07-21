@@ -8,12 +8,13 @@ import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Loader2, Sparkles, Calendar, FolderOpen, FileText, ImageIcon, X, Upload, Save } from 'lucide-react';
+import imageCompression from 'browser-image-compression'; // <-- ADDED
 
 export default function EditProject() {
     const router = useRouter();
     const params = useParams();
     const projectId = params.id as string;
-    
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [project, setProject] = useState<any>(null);
@@ -128,18 +129,29 @@ export default function EditProject() {
         try {
             let uploadedImages = [...existingImages];
 
-            // Upload new images
+            // Upload new images (with compression)
             if (newImages.length > 0) {
                 for (const file of newImages) {
+                    // ---- COMPRESSION ----
+                    const options = {
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 1200,
+                        useWebWorker: true,
+                        fileType: file.type,
+                    };
+                    const compressedFile = await imageCompression(file, options);
+                    // --------------------
+
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
                     const filePath = `projects/${fileName}`;
 
                     const { error: uploadError } = await supabase.storage
                         .from('MERYAMSWILEM')
-                        .upload(filePath, file, {
+                        .upload(filePath, compressedFile, {
                             cacheControl: '3600',
                             upsert: false,
+                            contentType: compressedFile.type,
                         });
 
                     if (uploadError) {
@@ -194,7 +206,7 @@ export default function EditProject() {
             <Toaster position="top-right" />
             <div className="space-y-8 max-w-3xl">
                 {/* Header */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
@@ -213,7 +225,7 @@ export default function EditProject() {
                 </motion.div>
 
                 {/* Form */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
@@ -299,7 +311,7 @@ export default function EditProject() {
                             <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
                                 Images
                             </label>
-                            
+
                             {/* Existing Images */}
                             {existingImages.length > 0 && (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mt-4">

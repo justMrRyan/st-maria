@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sparkles, Calendar, FolderOpen, FileText, ImageIcon, X, Upload, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression'; // <-- ADDED
 
 export default function NewProject() {
     const router = useRouter();
@@ -49,6 +50,7 @@ export default function NewProject() {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
+        // Optional: remove the size check or keep it – compression will handle large files
         const validFiles = files.filter(file => {
             if (file.size > 5 * 1024 * 1024) {
                 toast.error(`${file.name} is too large (max 5MB)`);
@@ -75,18 +77,29 @@ export default function NewProject() {
         try {
             const uploadedImages = [];
 
-            // Upload images
+            // Upload images (with compression)
             if (images.length > 0) {
                 for (const file of images) {
+                    // ---- COMPRESSION ----
+                    const options = {
+                        maxSizeMB: 0.5,           // target size in MB
+                        maxWidthOrHeight: 1200,   // max dimension
+                        useWebWorker: true,
+                        fileType: file.type,
+                    };
+                    const compressedFile = await imageCompression(file, options);
+                    // --------------------
+
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
                     const filePath = `projects/${fileName}`;
 
                     const { error: uploadError } = await supabase.storage
                         .from('MERYAMSWILEM')
-                        .upload(filePath, file, {
+                        .upload(filePath, compressedFile, {
                             cacheControl: '3600',
                             upsert: false,
+                            contentType: compressedFile.type, // important
                         });
 
                     if (uploadError) {
@@ -135,7 +148,7 @@ export default function NewProject() {
             <Toaster position="top-right" />
             <div className="space-y-8 max-w-3xl">
                 {/* Header */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
@@ -154,7 +167,7 @@ export default function NewProject() {
                 </motion.div>
 
                 {/* Form */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
@@ -240,7 +253,7 @@ export default function NewProject() {
                             <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
                                 Images
                             </label>
-                            
+
                             <div
                                 className="border-2 border-dashed border-[#f0ebe6] p-8 text-center hover:border-[#d4c5b0] transition-colors cursor-pointer bg-[#faf8f6]"
                                 onClick={() => fileInputRef.current?.click()}
