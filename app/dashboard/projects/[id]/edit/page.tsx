@@ -7,14 +7,14 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { toast, Toaster } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, Sparkles, Calendar, FolderOpen, FileText, ImageIcon, X, Upload, Save } from 'lucide-react';
-import imageCompression from 'browser-image-compression'; // <-- ADDED
+import { ArrowLeft, Loader2, Calendar, FolderOpen, FileText, ImageIcon, X, Save } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 export default function EditProject() {
     const router = useRouter();
     const params = useParams();
     const projectId = params.id as string;
-
+    
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [project, setProject] = useState<any>(null);
@@ -113,8 +113,55 @@ export default function EditProject() {
         setNewImages([...newImages, ...validFiles]);
     };
 
-    const removeExistingImage = (index: number) => {
-        setExistingImages(existingImages.filter((_, i) => i !== index));
+    // ----- HELPER: Delete image from Supabase Storage -----
+    const deleteImageFromStorage = async (publicUrl: string) => {
+        try {
+            // Extract the file path from the public URL
+            // Example: https://<project>.supabase.co/storage/v1/object/public/MERYAMSWILEM/projects/abc.jpg
+            const bucket = 'MERYAMSWILEM';
+            const urlParts = publicUrl.split('/');
+            const bucketIndex = urlParts.indexOf(bucket);
+            if (bucketIndex === -1) {
+                console.warn('Could not find bucket in URL:', publicUrl);
+                return;
+            }
+            const filePath = urlParts.slice(bucketIndex + 1).join('/');
+            
+            const { error } = await supabase.storage
+                .from(bucket)
+                .remove([filePath]);
+
+            if (error) {
+                console.error('Storage delete error:', error);
+                toast.error('Failed to delete image from storage');
+                throw error;
+            }
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            toast.error('Failed to delete image from storage');
+            throw error;
+        }
+    };
+
+    const removeExistingImage = async (index: number) => {
+        const urlToRemove = existingImages[index];
+        if (!urlToRemove) return;
+
+        // Confirm deletion (optional but recommended)
+        if (!confirm('Are you sure you want to remove this image? It will be deleted from storage.')) {
+            return;
+        }
+
+        try {
+            // Delete from storage
+            await deleteImageFromStorage(urlToRemove);
+            
+            // Update state
+            setExistingImages(existingImages.filter((_, i) => i !== index));
+            toast.success('Image removed');
+        } catch (error) {
+            // Error already handled in deleteImageFromStorage
+        }
     };
 
     const removeNewImage = (index: number) => {
@@ -132,7 +179,6 @@ export default function EditProject() {
             // Upload new images (with compression)
             if (newImages.length > 0) {
                 for (const file of newImages) {
-                    // ---- COMPRESSION ----
                     const options = {
                         maxSizeMB: 0.5,
                         maxWidthOrHeight: 1200,
@@ -140,7 +186,6 @@ export default function EditProject() {
                         fileType: file.type,
                     };
                     const compressedFile = await imageCompression(file, options);
-                    // --------------------
 
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -206,7 +251,7 @@ export default function EditProject() {
             <Toaster position="top-right" />
             <div className="space-y-8 max-w-3xl">
                 {/* Header */}
-                <motion.div
+                <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
@@ -225,7 +270,7 @@ export default function EditProject() {
                 </motion.div>
 
                 {/* Form */}
-                <motion.div
+                <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
@@ -311,7 +356,7 @@ export default function EditProject() {
                             <label className="block text-xs tracking-[0.2em] uppercase text-[#8a7a6a] mb-2 font-medium">
                                 Images
                             </label>
-
+                            
                             {/* Existing Images */}
                             {existingImages.length > 0 && (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mt-4">
@@ -325,7 +370,7 @@ export default function EditProject() {
                                             <button
                                                 type="button"
                                                 onClick={() => removeExistingImage(index)}
-                                                className="absolute top-1 right-1 p-1 bg-[#c0392b] text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute top-1 right-1 p-1 bg-[#c0392b] text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                                             >
                                                 <X className="h-4 w-4" />
                                             </button>
@@ -368,7 +413,7 @@ export default function EditProject() {
                                             <button
                                                 type="button"
                                                 onClick={() => removeNewImage(index)}
-                                                className="absolute top-1 right-1 p-1 bg-[#c0392b] text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute top-1 right-1 p-1 bg-[#c0392b] text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                                             >
                                                 <X className="h-4 w-4" />
                                             </button>
