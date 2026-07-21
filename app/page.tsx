@@ -4,7 +4,6 @@ import { AboutSection } from '@/components/AboutSection';
 import { PortfolioSection } from '@/components/PortfolioSection';
 import { ContactSection } from '@/components/ContactSection';
 import type { Metadata } from 'next';
-import { Footer } from '@/components/Footer';
 import { getSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -43,7 +42,6 @@ export default async function Home() {
             <AboutSection />
             <PortfolioSection projects={projects || []} />
             <ContactSection />
-            <Footer />
         </main>
     );
 }
