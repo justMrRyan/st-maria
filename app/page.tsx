@@ -8,6 +8,11 @@ import { getSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Interior Design Portfolio | Meryam Swilem',
+    icons: {
+        icon: '/favicon.ico',
+        shortcut: '/favicon.ico',
+        apple: '/favicon.ico',
+    },
   description: 'Explore stunning interior design projects and transformations by Meryam Swilem. Professional interior design services.',
   openGraph: {
     title: 'Interior Design Portfolio | Meryam Swilem',
