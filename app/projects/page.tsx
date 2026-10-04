@@ -121,7 +121,7 @@ export default function ProjectsPage() {
                         </button>
                     )}
                 </div>
-                
+
             </section>
 
             {/* ─── MASONRY GALLERY ────────────────────────────────────── */}

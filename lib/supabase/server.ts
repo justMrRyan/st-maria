@@ -8,10 +8,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
  * SSR-aware server client.
- * Reads/writes the auth session from cookies. Use this in:
- *   - Route Handlers (app/auth/callback/route.ts, etc.)
- *   - Server Components
- *   - Server Actions
+ * Only import from: Route Handlers, Server Components, Server Actions.
+ * NEVER import from a file that has 'use client' at the top.
  * Must be awaited because it reads cookies().
  */
 export async function getSupabaseClient() {
@@ -33,7 +31,7 @@ export async function getSupabaseClient() {
           );
         } catch {
           // Called from a Server Component — cookie set fails silently.
-          // Middleware (if you have it) will refresh the session instead.
+          // Middleware will refresh the session instead.
         }
       },
     },
