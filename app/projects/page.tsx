@@ -1,187 +1,265 @@
-// app/projects/page.tsx
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
-import { Sparkles, FolderOpen, X } from 'lucide-react';
+import { deleteImagesFromStorage } from '@/lib/supabase/storage'; // <-- IMPORT
+import { toast, Toaster } from 'sonner';
+import { motion } from 'framer-motion';
+import { Plus, Pencil, Trash2, Eye, Calendar, FolderOpen, Sparkles } from 'lucide-react';
 
 interface Project {
     id: string;
     title: string;
     description: string;
     category: string;
-    images: any[];
     date: string;
+    images: any[];
+    created_at: string;
 }
 
-function getImageUrl(images: any[]): string | null {
-    if (!images || images.length === 0) return null;
-    const firstImage = images[0];
-    if (typeof firstImage === 'string') return firstImage;
-    if (typeof firstImage === 'object' && firstImage.url) return firstImage.url;
-    return null;
-}
-
-export default function ProjectsPage() {
+export default function DashboardProjects() {
     const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [deleting, setDeleting] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('projects')
-                    .select('*')
-                    .order('date', { ascending: false });
-
-                if (error) throw error;
-                setProjects(data || []);
-            } catch (error) {
-                console.error('Error fetching projects:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchProjects();
     }, []);
 
-    // Extract unique categories
-    const allCategories = Array.from(
-        new Set(projects.map((p) => p.category).filter(Boolean))
-    ).sort();
+    const fetchProjects = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-    // Filter projects by selected category
-    const filteredProjects = selectedCategory
-        ? projects.filter((p) => p.category === selectedCategory)
-        : projects;
+            if (error) throw error;
+            setProjects(data || []);
+        } catch (error) {
+            console.error('Error fetching projects:', error);
+            toast.error('Failed to fetch projects');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    if (loading) {
+    // Helper to extract all image URLs from the project's images array
+    const extractImageUrls = (images: any[]): string[] => {
+        if (!images || images.length === 0) return [];
+        return images
+            .map(img => {
+                if (typeof img === 'string') return img;
+                if (typeof img === 'object' && img.url) return img.url;
+                return null;
+            })
+            .filter((url): url is string => url !== null);
+    };
+
+    const handleDelete = async (project: Project) => {
+        if (!confirm('Delete this project and all its images?')) return;
+
+        setDeleting(project.id);
+        try {
+            // 1. Delete all images from storage
+            const imageUrls = extractImageUrls(project.images);
+            if (imageUrls.length > 0) {
+                await deleteImagesFromStorage(imageUrls);
+                // Even if some fail, we proceed with deleting the project
+                // The helper logs warnings, but we don't throw.
+            }
+
+            // 2. Delete the project from the database
+            const { error } = await supabase
+                .from('projects')
+                .delete()
+                .eq('id', project.id);
+
+            if (error) throw error;
+
+            toast.success('Project deleted successfully');
+            await fetchProjects(); // Refresh list
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            toast.error('Failed to delete project');
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    const getImageUrl = (images: any[]) => {
+        if (!images || images.length === 0) return null;
+        const firstImage = images[0];
+        if (typeof firstImage === 'string') return firstImage;
+        if (typeof firstImage === 'object' && firstImage.url) return firstImage.url;
+        return null;
+    };
+
+    if (isLoading) {
         return (
-            <main className="min-h-screen bg-[#faf8f6] pt-20 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin h-10 w-10 border-4 border-[#d4c5b0] border-t-transparent rounded-full mx-auto" />
-                    <p className="text-[#8a7a6a] mt-4">Loading projects...</p>
-                </div>
-            </main>
+            <div className="flex justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-[#d4c5b0] border-t-transparent" />
+            </div>
         );
     }
 
     return (
-        <main className="min-h-screen bg-[#faf8f6]">
-            {/* ─── HERO ────────────────────────────────────────────────── */}
-            <section className="pt-20 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f8f4f0] via-white to-[#f0ebe6]">
-                <div className="max-w-7xl mx-auto text-center">
-                    <p className="text-sm tracking-[0.3em] uppercase text-[#d4c5b0] mb-3 font-medium">
-                        Portfolio
-                    </p>
-                    <h1 className="text-4xl sm:text-5xl font-bold text-[#2c1810]">
-                        Selected <span className="italic text-[#d4c5b0]">Projects</span>
-                    </h1>
-                    <div className="w-16 h-1 bg-[#d4c5b0] mx-auto mt-4 rounded-full" />
-                </div>
-            </section>
+        <>
+            <Toaster position="top-right" />
+            <div className="space-y-8">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                    <div>
+                        <h1 className="text-3xl font-bold text-[#2c1810]">Projects</h1>
+                        <p className="text-[#8a7a6a] mt-1">
+                            Manage your portfolio projects
+                        </p>
+                    </div>
+                    <Link href="/dashboard/projects/new">
+                        <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2.5 flex items-center gap-2 text-sm font-medium transition-all duration-300">
+                            <Plus className="h-4 w-4" />
+                            New Project
+                        </button>
+                    </Link>
+                </motion.div>
 
-            {/* ─── CATEGORY FILTER ───────────────────────────────────── */}
-            <section className="py-6 px-4 sm:px-6 lg:px-8 border-b border-[#f0ebe6] bg-white/80 backdrop-blur-sm sticky top-20 z-10">
-                <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-2 sm:gap-3">
-                    <button
-                        onClick={() => setSelectedCategory(null)}
-                        className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 ${
-                            selectedCategory === null
-                                ? 'bg-[#2c1810] text-white shadow-md'
-                                : 'bg-[#f8f4f0] text-[#8a7a6a] hover:bg-[#f0ebe6] hover:text-[#2c1810]'
-                        }`}
+                {projects.length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                        className="bg-[#f8f4f0] border border-[#f0ebe6] p-12 text-center"
                     >
-                        All
-                    </button>
-                    {allCategories.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-full transition-all duration-300 whitespace-nowrap ${
-                                selectedCategory === cat
-                                    ? 'bg-[#2c1810] text-white shadow-md'
-                                    : 'bg-[#f8f4f0] text-[#8a7a6a] hover:bg-[#f0ebe6] hover:text-[#2c1810]'
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                    {selectedCategory && (
-                        <button
-                            onClick={() => setSelectedCategory(null)}
-                            className="ml-auto text-xs text-[#8a7a6a] hover:text-[#2c1810] flex items-center gap-1 transition-colors"
-                        >
-                            <X className="h-3 w-3" />
-                            Clear filter
-                        </button>
-                    )}
-                </div>
-                
-            </section>
-
-            {/* ─── MASONRY GALLERY ────────────────────────────────────── */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    {filteredProjects.length === 0 ? (
-                        <div className="text-center py-20">
-                            <FolderOpen className="h-16 w-16 text-[#b8a89a] mx-auto mb-4" />
-                            <p className="text-lg font-medium text-[#2c1810]">No projects in this category</p>
-                            <p className="text-sm text-[#8a7a6a]">Try selecting a different category or view all projects.</p>
-                            <button
-                                onClick={() => setSelectedCategory(null)}
-                                className="mt-4 px-6 py-2 bg-[#2c1810] text-white text-sm font-medium rounded-full hover:bg-[#3d2820] transition-colors"
-                            >
-                                View All Projects
-                            </button>
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="bg-white p-4 shadow-sm">
+                                <Sparkles className="h-8 w-8 text-[#8a7a6a]" />
+                            </div>
+                            <div>
+                                <p className="text-lg font-medium text-[#2c1810]">No projects yet</p>
+                                <p className="text-sm text-[#8a7a6a] mt-1">
+                                    Start building your portfolio by creating your first project.
+                                </p>
+                            </div>
+                            <Link href="/dashboard/projects/new">
+                                <button className="bg-[#2c1810] hover:bg-[#3d2820] text-white px-6 py-2 text-sm font-medium transition-all duration-300 flex items-center gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    Create Your First Project
+                                </button>
+                            </Link>
                         </div>
-                    ) : (
-                        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-                            {filteredProjects.map((project, index) => {
-                                const imageUrl = getImageUrl(project.images);
-                                return (
-                                    <Link href={`/projects/${project.id}`} key={project.id}>
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 40 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.6, delay: index * 0.05 }}
-                                            className="group relative overflow-hidden break-inside-avoid cursor-pointer"
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                        {projects.map((project, index) => {
+                            const imageUrl = getImageUrl(project.images);
+                            return (
+                                <motion.div
+                                    key={project.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                                    className="group bg-white border border-[#f0ebe6] overflow-hidden transition-all duration-300 hover:shadow-md hover:border-[#d4c5b0]"
+                                >
+                                    {/* Image */}
+                                    <div className="relative w-full aspect-[4/3] bg-[#f8f4f0] overflow-hidden">
+                                        {imageUrl ? (
+                                            <Image
+                                                src={imageUrl}
+                                                alt={project.title}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[#b8a89a]">
+                                                <FolderOpen className="h-12 w-12" />
+                                            </div>
+                                        )}
+                                        {project.category && (
+                                            <div className="absolute top-3 left-3">
+                                                <span className="px-2.5 py-1 bg-[#2c1810]/80 text-white text-xs font-medium backdrop-blur-sm">
+                                                    {project.category}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {/* View Overlay */}
+                                        <Link
+                                            href={`/projects/${project.id}`}
+                                            target="_blank"
+                                            className="absolute inset-0 bg-[#2c1810]/0 group-hover:bg-[#2c1810]/30 transition-all duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100"
                                         >
-                                            {imageUrl ? (
-                                                <img
-                                                    src={imageUrl}
-                                                    alt={project.title}
-                                                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div className="w-full aspect-[3/4] bg-[#f0ebe6] flex items-center justify-center">
-                                                    <FolderOpen className="h-12 w-12 text-[#b8a89a]" />
+                                            <span className="px-4 py-2 bg-white text-[#2c1810] text-sm font-medium transform -translate-y-2 group-hover:translate-y-0 transition-all duration-500 flex items-center gap-2">
+                                                <Eye className="h-4 w-4" />
+                                                View Project
+                                            </span>
+                                        </Link>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-4 space-y-3">
+                                        <div>
+                                            <h3 className="font-semibold text-lg text-[#2c1810] line-clamp-1 group-hover:text-[#d4c5b0] transition-colors">
+                                                {project.title}
+                                            </h3>
+                                            {project.date && (
+                                                <div className="flex items-center gap-1 text-xs text-[#b8a89a] mt-1">
+                                                    <Calendar className="h-3 w-3" />
+                                                    {new Date(project.date).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                    })}
                                                 </div>
                                             )}
+                                        </div>
 
-                                            {/* Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#2c1810]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                                                {project.category && (
-                                                    <p className="text-xs tracking-[0.2em] uppercase text-[#d4c5b0]">
-                                                        {project.category}
-                                                    </p>
-                                                )}
-                                                <h3 className="text-xl font-medium text-white mt-1">{project.title}</h3>
-                                            </div>
-                                        </motion.div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            </section>
-        </main>
+                                        {project.description && (
+                                            <p className="text-sm text-[#8a7a6a] line-clamp-2">
+                                                {project.description}
+                                            </p>
+                                        )}
+
+                                        {/* Actions */}
+                                        <div className="flex gap-2 pt-2 border-t border-[#f0ebe6]">
+                                            <Link
+                                                href={`/dashboard/projects/${project.id}/edit`}
+                                                className="flex-1"
+                                            >
+                                                <button className="w-full border border-[#f0ebe6] text-[#2c1810] hover:bg-[#f8f4f0] px-3 py-1.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-1">
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                    Edit
+                                                </button>
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDelete(project)}
+                                                disabled={deleting === project.id}
+                                                className="flex-1 bg-[#c0392b] hover:bg-[#e74c3c] text-white px-3 py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-1"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                                {deleting === project.id ? '...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+                )}
+
+                {projects.length > 0 && (
+                    <div className="text-center text-sm text-[#b8a89a] pt-4 border-t border-[#f0ebe6]">
+                        Showing <span className="font-medium text-[#2c1810]">{projects.length}</span> project{projects.length !== 1 ? 's' : ''}
+                    </div>
+                )}
+            </div>
+        </>
     );
 }
