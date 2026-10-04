@@ -34,7 +34,7 @@ export const metadata: Metadata = {
         'Creating beautiful, timeless interior spaces that reflect your personality and lifestyle.',
     images: [
       {
-        url: '/images/about-portrait.jpg',   // ← leading slash
+        url: '/images/about-portrait.jpg',
         width: 1200,
         height: 630,
         alt: 'Meryam Swilem - Interior Design',
@@ -46,13 +46,27 @@ export const metadata: Metadata = {
     title: 'Meryam Swilem - Interior Design',
     description:
         'Creating beautiful, timeless interior spaces that reflect your personality and lifestyle.',
-    images: ['/images/about-portrait.jpg'], // ← leading slash
+    images: ['/images/about-portrait.jpg'],
   },
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
     apple: '/favicon.ico',
   },
-  // manifest: '/site.webmanifest',  ← either delete this line
-  //                                    OR create public/site.webmanifest
 };
+
+export default function RootLayout({
+                                     children,
+                                   }: {
+  children: React.ReactNode;
+}) {
+  return (
+      <html lang="en" suppressHydrationWarning>
+      <body className="bg-[#faf8f6] overflow-x-hidden" suppressHydrationWarning>
+      <Navbar />
+      <main className="min-h-screen">{children}</main>
+      <Footer />
+      </body>
+      </html>
+  );
+}
