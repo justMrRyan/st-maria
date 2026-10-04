@@ -1,3 +1,4 @@
+// app/projects/[id]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,6 +16,8 @@ interface Project {
     category: string | null;
     date: string | null;
     images: any[] | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export default function ProjectDetailPage() {
